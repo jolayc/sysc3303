@@ -3,7 +3,7 @@ import java.net.*;
 import java.io.*;
 
 public class client {
-	private DatagramSocket sendReceiveSocket;
+	protected DatagramSocket sendReceiveSocket;
 	private byte[] requests;
 	private DatagramPacket sendPacket;
 	private final byte zero = 0x00;
@@ -11,6 +11,7 @@ public class client {
 	private final byte two = 0x10;
 	private final String filename = "text.txt";
 	private final String mode = "netascii";
+	protected int portNum = 23;
 	
 	public client() {
 		/* Construct a datagram socket and bind it to any available
@@ -45,14 +46,7 @@ public class client {
 		if (index == 10) {
 			
 		} else {
-			switch(index) {
-			case 0:
-				
-				break;
-			default:
-				
-				break;
-			}
+
 		} return byteArray;
 	}
 	

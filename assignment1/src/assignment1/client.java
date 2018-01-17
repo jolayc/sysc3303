@@ -4,14 +4,17 @@ import java.io.*;
 
 public class client {
 	protected DatagramSocket sendReceiveSocket;
-	private byte[] requests;
-	private DatagramPacket sendPacket;
+	protected DatagramPacket sendPacket, receivePacket;
+	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
 	private final byte two = 0x10;
-	private final String filename = "text.txt";
-	private final String mode = "netascii";
-	protected int portNum = 23;
+	
+	protected final String filename = "text.txt";
+	protected final String mode = "netascii";
+	protected int port = 23;
+	
+	protected byte[] msg;
 	
 	public client() {
 		/* Construct a datagram socket and bind it to any available
@@ -20,7 +23,6 @@ public class client {
 		 */
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			requests = new byte[100];
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -30,24 +32,27 @@ public class client {
 	public void sendAndReceive() {
 		try {
 			for (int i = 0; i < 11; i++) {
-				requests = generateByteArray(i);
-				sendPacket = new DatagramPacket(requests, requests.length, InetAddress.getLocalHost(), 23);
+				msg = getByteArray(i);
+				sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 23);
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		
+		System.out.println("Client: Sending packet: ");
+		
+		try {
+			sendReceiveSocket.send(sendPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println("Client: Packet sent.\n");
 	}
 	
-	private byte[] generateByteArray(int index) {
-		byte[] fileBytes = filename.getBytes();
-		byte[] modeBytes = mode.getBytes();
-		byte[] byteArray = new byte[100];
-		if (index == 10) {
-			
-		} else {
-
-		} return byteArray;
+	private byte[] getByteArray(int index) {
+		
 	}
 	
 	public static void main(String[] args) {

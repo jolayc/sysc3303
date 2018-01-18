@@ -11,18 +11,18 @@ public class client {
 	protected DatagramPacket sendPacket, receivePacket;
 
 	protected int port = 23;
-	
+
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
 	private final byte two = 0x10;
-	
+
 	public client() {
 		try {
-			
-			 //Construct a datagram socket and bind it to any available
-			 // port and on the local host machine. This socket will be used to 
-			 // send and receive UDP Datagram packets.
-			
+
+			//Construct a datagram socket and bind it to any available
+			// port and on the local host machine. This socket will be used to 
+			// send and receive UDP Datagram packets.
+
 			sendReceiveSocket = new DatagramSocket();
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -43,16 +43,16 @@ public class client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		System.out.println("Client: Sending packet: ");
 		System.out.println("To host: " + sendPacket.getAddress());
 		System.out.println("Destination host port: " + sendPacket.getPort());
 		len = sendPacket.getLength();
 		System.out.println("Containing: ");
 		System.out.println(new String(sendPacket.getData(),0,len));
-		
+
 		// Send the datagram packet to the server via the send/receive socket
-		
+
 		try {
 			sendReceiveSocket.send(sendPacket);
 		} catch (IOException e) {
@@ -60,13 +60,13 @@ public class client {
 			System.exit(1);
 		}
 		System.out.println("Client: Packet sent.\n");
-		
+
 		// Construct a DatagramPacket for receiving packets up
 		// to 100 bytes long
-		
+
 		byte data[] = new byte[100];
 		receivePacket = new DatagramPacket(data, data.length);
-		
+
 		try {
 			// Block until a datagram is received via sendReceiveSocket
 			sendReceiveSocket.receive(receivePacket);
@@ -74,31 +74,31 @@ public class client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		// Process the received datagram
 		System.out.println("Client: Packet received:");
-	    System.out.println("From host: " + receivePacket.getAddress());
-	    System.out.println("Host port: " + receivePacket.getPort());
-	    len = receivePacket.getLength();
-	    System.out.println("Length: " + len);
-	    System.out.print("Containing: ");
-	    
-	    // Form a String from the byte array
-	    received = new String(data,0,len);
-	    System.out.println(received);
-	    
-	    // Close the socket
-	    sendReceiveSocket.close();
+		System.out.println("From host: " + receivePacket.getAddress());
+		System.out.println("Host port: " + receivePacket.getPort());
+		len = receivePacket.getLength();
+		System.out.println("Length: " + len);
+		System.out.print("Containing: ");
+
+		// Form a String from the byte array
+		received = new String(data,0,len);
+		System.out.println(received);
+
+		// Close the socket
+		sendReceiveSocket.close();
 	}
-	
+
 	private byte[] getByteArray(int index) {
 		byte[] byteArray;
 		String filename = "test.txt";
 		String mode = "netascii";
-		
+
 		return byteArray;
 	}
-	
+
 	public static void main(String[] args) {
 		client c = new client();
 		c.sendAndReceive();

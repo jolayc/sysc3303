@@ -6,6 +6,7 @@ import java.io.*;
  * A majority of this class is composed of code from the
  * SimpleEchoClient java class studied in class
  */
+
 public class client {
 	protected DatagramSocket sendReceiveSocket;
 	protected DatagramPacket sendPacket, receivePacket;
@@ -18,7 +19,6 @@ public class client {
 
 	public client() {
 		try {
-
 			//Construct a datagram socket and bind it to any available
 			// port and on the local host machine. This socket will be used to 
 			// send and receive UDP Datagram packets.
@@ -34,8 +34,9 @@ public class client {
 		int len;
 		String received;
 		byte[] msg;
+		
 		try {
-			for (int i = 0; i < 11; i++) {
+			for (int i = 1; i < 12; i++) {
 				msg = getByteArray(i);
 				sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), port);
 			}
@@ -95,7 +96,29 @@ public class client {
 		byte[] byteArray;
 		String filename = "test.txt";
 		String mode = "netascii";
-
+		String s;
+		
+		if (i % 2 == 0) {
+			// Read request
+			s += zero;
+			s += one;
+			s += filename;
+			s += zero;
+			s += mode;
+			s += zero;
+		} else if (i == 11) {
+			// Invalid request
+			s = "ERROR";
+		} else {
+			// Write request
+			s += zero;
+			s += two;
+			s += filename;
+			s += zero;
+			s += mode;
+			s += zero;
+		}
+		byteArray = s.getBytes();
 		return byteArray;
 	}
 

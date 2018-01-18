@@ -92,6 +92,7 @@ public class client {
 		sendReceiveSocket.close();
 	}
 
+	// Create byte array for read/write requests
 	private byte[] getByteArray(int index) {
 		byte[] byteArray;
 		String filename = "test.txt";

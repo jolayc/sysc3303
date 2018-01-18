@@ -96,9 +96,9 @@ public class client {
 		byte[] byteArray;
 		String filename = "test.txt";
 		String mode = "netascii";
-		String s;
+		String s = null;
 		
-		if (i % 2 == 0) {
+		if (index % 2 == 0) {
 			// Read request
 			s += zero;
 			s += one;
@@ -106,7 +106,7 @@ public class client {
 			s += zero;
 			s += mode;
 			s += zero;
-		} else if (i == 11) {
+		} else if (index == 11) {
 			// Invalid request
 			s = "ERROR";
 		} else {

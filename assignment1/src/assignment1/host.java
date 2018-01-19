@@ -46,12 +46,7 @@ public class host {
 			printPacketReceived(receivePacket);
 			
 			// Form a packet to send containing exactly what it received
-			try {
-				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), receivePacket.getPort()); 
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
+			sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), receivePacket.getPort());
 			// Send packet on its send/receive socket to port 69
 			try {
 				sendReceiveSocket.send(sendReceivePacket);

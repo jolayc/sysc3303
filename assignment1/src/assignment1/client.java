@@ -97,7 +97,7 @@ public class client {
 		byte[] byteArray;
 		String filename = "test.txt";
 		String mode = "netascii";
-		String s = null;
+		String s = "";
 		
 		if (index % 2 == 0) {
 			// Read request

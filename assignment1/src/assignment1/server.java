@@ -25,6 +25,7 @@ public class server {
 		while(true) {
 			boolean readReq = false;
 			boolean writeReq = false;
+			
 			receivePacket = new DatagramPacket(data, data.length);
 			try {
 				// Server waits to receive a request

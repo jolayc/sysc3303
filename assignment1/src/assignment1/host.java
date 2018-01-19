@@ -5,7 +5,7 @@ import java.io.*;
 
 public class host {
 	protected DatagramSocket receiveSocket, sendReceiveSocket;
-	protected DatagramPacket sendPacket, receivePacket;
+	protected DatagramPacket sendReceivePacket, receivePacket;
 	
 	public host() {
 		int port = 23;
@@ -28,6 +28,9 @@ public class host {
 		while(true) {
 			data = new byte[100];
 			receivePacket = new DatagramPacket(data, data.length);
+			//len = receivePacket.getLength();
+			//port = receivePacket.getPort();
+			//address = receivePacket.getAddress();
 			
 			// Try to receive request
 			try {
@@ -43,8 +46,19 @@ public class host {
 			printPacketReceived(receivePacket);
 			
 			// Form a packet to send containing exactly what it received
-			
+			try {
+				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), receivePacket.getPort()); 
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 			// Send packet on its send/receive socket to port 69
+			try {
+				sendReceiveSocket.send(sendReceivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 	}
 	

@@ -4,17 +4,16 @@ import java.util.Arrays;
 import java.io.*;
 
 public class host {
-	protected DatagramSocket receiveSocket, sendReceiveSocket, sendSocket;
+	protected DatagramSocket receiveSocket, sendReceiveSocket;
 	protected DatagramPacket sendPacket, receivePacket;
-	private final int port = 23;
 	
 	public host() {
+		int port = 23;
 		try {
 			// Create a datagram socket to send and receive
 			sendReceiveSocket = new DatagramSocket();
 			// Create datagram socket to receive (port 23)
 			receiveSocket = new DatagramSocket(port);
-			sendSocket = new DatagramSocket();
 		} catch (SocketException se){
 			se.printStackTrace();
 			System.exit(1);
@@ -30,7 +29,7 @@ public class host {
 			data = new byte[100];
 			receivePacket = new DatagramPacket(data, data.length);
 			
-			// Attempt to retrieve data from socket
+			// Try to receive request
 			try {
 				System.out.println("Waiting to receive...");
 				receiveSocket.receive(receivePacket);
@@ -40,15 +39,12 @@ public class host {
 				System.exit(1);
 			}
 			
-			// Print out information
+			// Print out information it has received
 			printPacketReceived(receivePacket);
 			
 			// Form a packet to send containing exactly what it received
-			sendPacket = receivePacket;
-			System.out.println("Packet created.");
 			
 			// Send packet on its send/receive socket to port 69
-			sendToPort69(sendPacket);
 		}
 	}
 	

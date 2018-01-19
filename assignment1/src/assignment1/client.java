@@ -41,7 +41,6 @@ public class client {
 		
 		for (int i = 1; i < 12; i++) {
 			msg = getByteArray(i);
-			//System.out.println("Client: sending a packet containing:\n" + msg);
 			try {
 				// Construct a datagram packet to be sent
 				sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), port);
@@ -115,7 +114,7 @@ public class client {
 	
 	// Print the details of the packet being sent to the console
 	private void printDetailsSend(DatagramPacket dp) {
-		System.out.println("Client: Sending packet:");
+		System.out.println("Client: Sending packet...");
 		System.out.println("To host: " + dp.getAddress());
 		System.out.println("Destination host port: " + dp.getPort());
 		printInfo(dp);

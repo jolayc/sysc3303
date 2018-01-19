@@ -44,8 +44,16 @@ public class host {
 			printPacketReceived(receivePacket);
 			
 			// Form a packet to send containing exactly what it received
+			sendPacket = receivePacket;
+			System.out.println("Packet created.");
 			
+			// Send packet on its send/receive socket to port 69
+			sendToPort69(sendPacket);
 		}
+	}
+	
+	private void sendToPort69(DatagramPacket dp)  {
+		
 	}
 	
 	private void printPacketReceived(DatagramPacket dp) {

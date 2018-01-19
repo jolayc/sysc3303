@@ -51,7 +51,7 @@ public class client {
 		len = sendPacket.getLength();
 		System.out.println("Containing: ");
 		System.out.println(new String(sendPacket.getData(),0,len));
-
+		//System.out.println(sendPacket.getBytes());
 		// Send the datagram packet to the server via the send/receive socket
 
 		try {

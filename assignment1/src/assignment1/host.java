@@ -9,7 +9,7 @@ public class host {
 	public host() {
 		try {
 			receiveSocket = new DatagramSocket();
-			sendReceiveSocket
+			//sendReceiveSocket
 		} catch (SocketException se){
 			
 		}

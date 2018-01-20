@@ -22,15 +22,11 @@ public class host {
 	
 	public void loop() {
 		byte[] data;
-		int len, port;
-		InetAddress address;
+		DatagramSocket sock;
 		
 		while(true) {
 			data = new byte[100];
 			receivePacket = new DatagramPacket(data, data.length);
-			//len = receivePacket.getLength();
-			//port = receivePacket.getPort();
-			//address = receivePacket.getAddress();
 			
 			// Try to receive request
 			try {
@@ -47,6 +43,7 @@ public class host {
 			
 			// Form a packet to send containing exactly what it received
 			sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), receivePacket.getPort());
+			
 			// Send packet on its send/receive socket to port 69
 			try {
 				sendReceiveSocket.send(sendReceivePacket);
@@ -54,11 +51,45 @@ public class host {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
+			System.out.println("Intermediate Host: Packet sent to server.");
+			receivePacket = new DatagramPacket(data, data.length);
+			
+			try {
+				sendReceiveSocket.receive(receivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			// Print response from server
+			printResponse(receivePacket);
+			
+			sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), receivePacket.getPort());
+			
+			try {
+				sock = new DatagramSocket();
+				sendReceiveSocket.send(sendReceivePacket);
+				sock.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			System.out.println("Intermediate Host: Packet sent to client");
 		}
 	}
 	
-	private void sendToPort69(DatagramPacket dp)  {
-		
+	private void close() {
+		sendReceiveSocket.close();
+		receiveSocket.close();
+		System.out.println("Sockets closed.");
+	}
+	
+	private void printResponse(DatagramPacket dp) {
+		System.out.println("Response from the server: ");
+		System.out.println("Server: Packet received (bytes): " + receivePacket.getData());
+		System.out.print("Containing: ");
+		System.out.print(Arrays.toString(dp.getData()));
 	}
 	
 	private void printPacketReceived(DatagramPacket dp) {

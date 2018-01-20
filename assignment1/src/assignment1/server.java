@@ -1,6 +1,7 @@
 package assignment1;
 import java.io.IOException;
 import java.net.*;
+import java.util.Arrays;
 
 public class server {
 	protected DatagramSocket sendSocket, receiveSocket;
@@ -8,24 +9,26 @@ public class server {
 	private final byte zero = 0;
 	private final byte one = 1;
 	private final byte two = 2;
+	private final int serverPort = 69;
 	
 	public server() { 
 		try {
-			receiveSocket = new DatagramSocket(23);
+			receiveSocket = new DatagramSocket(serverPort, InetAddress.getLocalHost());
 		} catch (SocketException se) {
 			se.printStackTrace();
+			System.exit(1);
+		} catch (UnknownHostException ue) {
+			ue.printStackTrace();
 			System.exit(1);
 		}
 	}
 	
 	public void loop() {
-		byte[] data;
-		data = new byte[100];
+		byte[] data = new byte[100];
+		boolean valid;
+		byte[] response = new byte[100];
 		
 		while(true) {
-			boolean readReq = false;
-			boolean writeReq = false;
-			
 			receivePacket = new DatagramPacket(data, data.length);
 			try {
 				// Server waits to receive a request
@@ -38,56 +41,89 @@ public class server {
 			}
 			
 			// Parse through information
+			valid = checkPacket(data, data.length);
+			if (!valid) {
+				System.out.println("Invalid request detected. Server will terminate.");
+				throw new IllegalArgumentException("Invalid request exception");
+			}
+			printInfo(receivePacket);
+			if (data[1] == one) {
+				response = new byte[] {0,3,0,1};
+			} else if (data[1] == two) {
+				response = new byte[] {0,4,0,0};
+			}
+			sendPacket = new DatagramPacket(response, response.length, receivePacket.getAddress(), receivePacket.getPort());
+			
 			try {
-				checkPacket(receivePacket);
-			} catch (Exception e) {
+				sendSocket = new DatagramSocket();
+				sendSocket.send(sendPacket);
+				sendSocket.close();
+			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
 			
-			// Print out information it has received
-			
-			// If packet is valid read req, send 0 3 0 1
-			
-			// If packet is valid write req, send 0 4 0 0
-			
-			// Prints out the response packet info
-			
-			// Create DatagramSocket for response
-			
-			// Sends packet via new socket to the port it received the request from
-			
-			// Close the socket it just created
-			
+			System.out.println("Server: Sending response: " + response);
+			System.out.println("Containing: ");
+			for (byte b : response) {
+				System.out.print(b);
+			}
+			System.out.println();
 		}
 	}
 	
-	private void checkPacket(DatagramPacket dp) throws Exception {
-		byte[] data = dp.getData();
+	// Checks if data received is valid format/contents
+	private boolean checkPacket(byte[] data, int len) {
+		String mode = "";
+		String filename = "";
 		int i;
-		
-		// Check for first zero
+		// First zero
 		if (data[0] != zero) {
-			throw new Exception("First byte is invalid");
+			return false;
 		}
-		// Check for request type
-		if (data[1] != one || data[1] != two) {
-			throw new Exception("Request byte is invalid");
+		// Request byte
+		if (data[1] != one && data[1] != two) {
+			return false;
 		}
-		// Check for file contents
-		
-		// Check for second zero
-		
-		// Check for mode type
-		
-		// Check for last zero
-		if (data[data.length - 1] != zero) {
-			throw new Exception("Packet does not have 0 as last byte or is too long");
+		i = 2;
+		// Valid filename
+		while (data[i] != zero && i < len - 1) {
+			filename += (char)data[i++];
 		}
+		if (filename == "") {
+			return false;
+		}
+		// Middle zero
+		if (data[i++] != zero) {
+			return false;
+		}
+		// Valid mode
+		while(data[i] != zero && i < len - 1) {
+			mode += (char)data[i++];
+		}
+		mode = mode.toLowerCase();
+		if (!mode.equals("netascii") && !mode.equals("octet")) {
+			return false;
+		}
+		if (data[i++] != zero) {
+			return false;
+		}
+		// EOF zero
+		while (i < len) {
+			if (data[i++] != zero) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private void printInfo(DatagramPacket dp) {
-		
+		System.out.println("Packet received: ");
+		System.out.println("Server: Request: " + dp.getData());
+		System.out.print("Containing: ");
+		System.out.print(Arrays.toString(dp.getData()));
+		String packet = new String(dp.getData(), 0, dp.getLength());
+		System.out.println(", (text) " + packet);
 	}
 		
 	public static void main(String[] args) {

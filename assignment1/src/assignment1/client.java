@@ -131,11 +131,13 @@ public class client {
 	// Print the details about the length and contents of the packet
 	private void printInfo(DatagramPacket dp) {
 		int len = dp.getLength();
+		byte[] data = dp.getData();
 		System.out.println("Length: " + len);
 		System.out.print("Containing: (bytes) ");
-		System.out.print(Arrays.toString(dp.getData()));
+		System.out.println(Arrays.toString(dp.getData()));
 		String packet = new String(dp.getData(), 0, len);
-		System.out.println(", (text) " + packet);
+		String request = data[1] == one ? "Read":"Write";
+		System.out.println("(type): " + request + " (filename and mode): " + packet);
 	}
 
 	public static void main(String[] args) {

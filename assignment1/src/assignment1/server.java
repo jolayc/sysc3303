@@ -6,19 +6,19 @@ import java.util.Arrays;
 public class server {
 	protected DatagramSocket sendSocket, receiveSocket;
 	protected DatagramPacket sendPacket, receivePacket;
+	
 	private final byte zero = 0;
 	private final byte one = 1;
 	private final byte two = 2;
+	
 	private final int serverPort = 69;
 	
 	public server() { 
 		try {
-			receiveSocket = new DatagramSocket(serverPort, InetAddress.getLocalHost());
+			// Create a DatagramSocket to use to receive (port 69)
+			receiveSocket = new DatagramSocket(serverPort);
 		} catch (SocketException se) {
 			se.printStackTrace();
-			System.exit(1);
-		} catch (UnknownHostException ue) {
-			ue.printStackTrace();
 			System.exit(1);
 		}
 	}
@@ -46,12 +46,15 @@ public class server {
 				System.out.println("Invalid request detected. Server will terminate.");
 				throw new IllegalArgumentException("Invalid request exception");
 			}
+			
 			printInfo(receivePacket);
+			
 			if (data[1] == one) {
 				response = new byte[] {0,3,0,1};
 			} else if (data[1] == two) {
 				response = new byte[] {0,4,0,0};
 			}
+			
 			sendPacket = new DatagramPacket(response, response.length, receivePacket.getAddress(), receivePacket.getPort());
 			
 			try {
@@ -118,14 +121,16 @@ public class server {
 	}
 	
 	private void printInfo(DatagramPacket dp) {
-		System.out.println("Packet received: ");
-		System.out.println("Server: Request: " + dp.getData());
-		System.out.print("Containing: ");
-		System.out.print(Arrays.toString(dp.getData()));
-		String packet = new String(dp.getData(), 0, dp.getLength());
-		System.out.println(", (text) " + packet);
+		int len = dp.getLength();
+		byte[] data = dp.getData();
+		System.out.println("Length: " + len);
+		System.out.print("Containing: (bytes) ");
+		System.out.println(Arrays.toString(dp.getData()));
+		String packet = new String(dp.getData(), 0, len);
+		String request = data[1] == one ? "Read":"Write";
+		System.out.println("(type): " + request + " (filename and mode): " + packet);
 	}
-		
+
 	public static void main(String[] args) {
 		server s = new server();
 		s.loop();

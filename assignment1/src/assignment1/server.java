@@ -11,7 +11,7 @@ public class server {
 	private final byte one = 1;
 	private final byte two = 2;
 	
-	private final int serverPort = 69;
+	protected int serverPort = 69;
 	
 	public server() { 
 		try {
@@ -23,7 +23,7 @@ public class server {
 		}
 	}
 	
-	public void loop() {
+	private void loop() {
 		byte[] data = new byte[100];
 		boolean valid;
 		byte[] response = new byte[100];

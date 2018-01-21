@@ -26,7 +26,7 @@ public class host {
 		}
 	}
 	
-	public void loop() {
+	private void loop() {
 		byte[] data;
 		DatagramSocket sock;
 		InetAddress client;
@@ -98,19 +98,6 @@ public class host {
 		sendReceiveSocket.close();
 		receiveSocket.close();
 		System.out.println("Sockets closed.");
-	}
-	
-	private byte[] dataToString(byte[] data, int start) {
-		int index = 0;
-		for (int i = start; i < data.length; i++) {
-			if (data[i] == 0) {
-				index = i;
-				break;
-			}
-		}
-		byte[] info = new byte[index - start];
-		System.arraycopy(data, start, info, 0, info.length);
-		return info;
 	}
 	
 	private void printPacketInfo(DatagramPacket dp) {

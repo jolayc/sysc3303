@@ -34,7 +34,7 @@ public class client {
 		}
 	}
 
-	public void sendAndReceive() {
+	private void sendAndReceive() {
 		int len;
 		String received;
 		byte[] msg, data;

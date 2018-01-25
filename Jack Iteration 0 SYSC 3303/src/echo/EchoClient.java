@@ -18,10 +18,9 @@ public class EchoClient {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
-	private final byte two = 0x02;
-
-	private final String filename = "test.txt";
-	private final String mode = "netascii";
+	
+	private String filename;
+	private String mode;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -31,97 +30,40 @@ public class EchoClient {
 		try{
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
-
+			byte[] data = new byte[2];
+		    receivePacket = new DatagramPacket(data, data.length);
 		}
 		catch (SocketException se){
 			se.printStackTrace();
 			System.exit(1);
 		}
 	}
-
+	
 	/**
 	 * Sends a request packet to the intermediate host
 	 * Receives a response packet from the intermediate host 
 	 */
 	public void sendAndReceive(){
-		
-		byte[] buf;
-	
-		for(int i = 0; i < 11; i++){
-			
-			buf = createByteArray(i+1);
 				
-			//creates a datagram packet that  contains buf will be ported to port 23 on the intermediate host
-			try {
-				sendPacket = new DatagramPacket(buf, buf.length, InetAddress.getLocalHost(), 23);
-			} catch (UnknownHostException e1) {
-				e1.printStackTrace();
-				System.exit(1);
-			}
-			    
-			//sends the sendPacket to the intermediate host
+			sendPacket = createRRQPacket();
 			sendPack(sendReceiveSocket, sendPacket);
-		
-			//constructs a datagram packet to receive packets 20 bytes long
-			byte[] data = new byte[4];
-		    receivePacket = new DatagramPacket(data, data.length);
+			receivePack(sendReceiveSocket, receivePacket);
+			
+			
+			sendPacket = createWRQPacket();
+			sendPack(sendReceiveSocket, sendPacket);
+			receivePack(sendReceiveSocket, receivePacket);
 		    
-		    //waits until sendReceiveSocket receives a datagram packet from the intermediate host
-		    receivePack(sendReceiveSocket, receivePacket);
-		} 
-	}
-	
+	} 
+
 	/**
-	 * Creates a byte array that contains a request that will be later send to the intermediate host
-	 * @param index, integer representing which number packet is being created
-	 * @return the byte[] containing the request
+	 * Sends a request packet to the intermediate host
+	 * Receives a response packet from the intermediate host 
 	 */
-	public byte[] createByteArray(int index){
-		
-		//contains the bytes of the global strings
-		byte[] filebyte = filename.getBytes();
-		byte[] modebyte = mode.getBytes();
-		
-		//buffer that will contain the request bytes
-		byte[] buffer = new byte[filebyte.length + modebyte.length + 4];
-		
-		buffer[0] = zero;
-		
-		//odd numbered requests
-	    if(index%2 == 1){
-			buffer[1] = one;
-		}
-	    //even numbered requests
-		else{
-			buffer[1] = two;
-		}
-	    
-	    //copying the bytes from filebyte into the buffer
-	    for(int ch = 0; ch < filebyte.length; ch++){
-	    	buffer[2+ch] = filebyte[ch];
-	    }
-	    
-	    //the eleventh request will be invalid
-	    if(index == 11){ 
-	    	buffer[2+filebyte.length] = one;
-	    }
-	    else{
-	    	buffer[2+filebyte.length] = zero;
-	    }
-	    
-	    //copying the bytes from modebyte into the buffer
-	    for(int ch = 0; ch < modebyte.length; ch++){
-	    	buffer[3+filebyte.length+ch] = modebyte[ch];
-	    }
-	    
-	    buffer[3+filebyte.length+modebyte.length] = zero;
-	    return buffer;
-	}
 	
 	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
 		
 		printSend(sendPacket);
-		
 		try{
 			 socket.send(packet);
 		 }
@@ -129,13 +71,11 @@ public class EchoClient {
 			 io.printStackTrace();
 			 System.exit(1);
 		 }
-		
 	}
 	
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("Client: Waiting for Packet.\n");
-		
 		try {        
 	         System.out.println("Waiting...");
 	         socket.receive(packet);
@@ -143,8 +83,66 @@ public class EchoClient {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		
 		printReceive(packet);
+	}
+	
+	public DatagramPacket createRRQPacket(){
+		
+		byte[] rrq = new byte[100];
+		rrq[0] = zero;
+		rrq[1] = one;
+		
+		finishRRQOrWRQ(rrq);
+		
+		return createSendPacket(rrq);
+	}
+	
+	public DatagramPacket createWRQPacket(){
+		
+		byte[] wrq = new byte[2];
+		wrq[0] = one;
+		wrq[1] = zero;
+		
+		finishRRQOrWRQ(wrq);
+		
+		return createSendPacket(wrq);
+	}
+	
+	private void finishRRQOrWRQ(byte[] rq){
+		
+		int offset = 0;
+		
+		//contains the bytes of the global strings
+	    byte[] filebyte = filename.getBytes();
+		byte[] modebyte = mode.getBytes();	
+		
+		for(int ch = 0; ch < filebyte.length; ch++){
+	    	rq[2+ch] = filebyte[ch];
+	    	offset = 3 + ch;
+	    }
+		rq[offset] = zero;
+		
+		for(int ch = 0; ch < modebyte.length; ch++){
+	    	rq[offset + ch] = modebyte[ch];
+	    	if (ch == modebyte.length - 1) offset = offset + ch;
+	    }
+		rq[offset] = zero;
+	}
+	
+	public DatagramPacket createSendPacket(byte[] rq){
+		DatagramPacket send = null;
+		try {
+			send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), 23);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+			System.exit(1);
+		}
+
+		return send;
+	}
+	
+	public DatagramPacket createReceivePacket(byte[] block){
+		return new DatagramPacket(block, block.length);
 	}
 
 	/**
@@ -188,7 +186,7 @@ public class EchoClient {
 	
 	public static void main(String args[]){
 		EchoClient c = new EchoClient();
-	    c.sendAndReceive();
+		
 	}
 }
 

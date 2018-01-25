@@ -1,6 +1,5 @@
 package echo;
 
-
 /**
  * EchoServer
  * Server side of a simple echo server.
@@ -16,13 +15,14 @@ import java.util.Arrays;
 
 public class EchoServer {
 	
+	private final byte zero = 0x00;
+	private final byte one = 0x01;
+	private final byte three = 0x03;
+	private final byte four = 0x04;
+	
 	//Variables used for parsing the byte array
-	private int zeroes; 
 	private boolean read;  //true if request send is a read request
 	private boolean write; //true if request send is a write request
-	private boolean file; //true if the server  is reading/has read the filename 
-	private boolean mode ; //true if the server  is reading/has read the mode
-	
 	
 	private DatagramSocket receiveSocket, sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
@@ -37,17 +37,12 @@ public class EchoServer {
 			se.printStackTrace();
 			System.exit(1);
 		}
+		init();
 	}
 	
-	/**
-	 * Initializes the parsing variables
-	 */
-	public void init(){
-	    zeroes = 0;
-		read = false;
-		write = false;
-		file = false;
-		mode = false;	
+	protected void init(){
+		this.read = false;
+		this.write = false;
 	}
 	
 	/**
@@ -61,18 +56,17 @@ public class EchoServer {
 			
 			//constructs a datagram packet to receive packets 20 bytes long
 			byte data[] = new byte[20];	
-			receivePacket = new DatagramPacket(data, data.length);
+			byte response[] = new byte[4];
 			
-			//wait until receiveSocket receives a datagram packet from the intermediate host
+			receivePacket = new DatagramPacket(data, data.length);
+			System.out.println("Server: Waiting for Packet.\n");
+			
 			receivePack(receiveSocket, receivePacket);
-			 
-			//parse the received packet to see if it's valid
-			try {
-				checkReadWrite(receivePacket.getData());
-			} catch (Exception e) {
-				System.out.println("Invalid Packet");
-				System.exit(1);
-			}
+			
+			checkReadWrite(receivePacket.getData());
+			
+			if(read) response = createDataPacket();
+			else if(write) response = createDataPacket();
 			 
 			//constructs a socket to send packets from any available port
 			try {
@@ -81,101 +75,24 @@ public class EchoServer {
 				e1.printStackTrace();
 				System.exit(1);
 			}
-			
-			byte sendBytes[] = createSendBytes(); //contains a response to the sent request
 			 
 			//creates a datagram packet that will contain sendBytes that will be ported to the same port as receivePacket
 			try {
-				sendPacket = new DatagramPacket(sendBytes, sendBytes.length, InetAddress.getLocalHost(), receivePacket.getPort());
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
 			 
-			 //sends the packet containing sendBytes to the intermediate host
 			 sendPack(sendSocket, sendPacket);
 			 
-			 //sendSocket.close();
+			 sendSocket.close();
 		}
-	}
-	/**
-	 * Parses a byte array and checks if is a read request or a write request
-	 * @param data, byte[] that contains the request
-	 * @throws Exception if the request is invalid
-	 */
-	public void checkReadWrite(byte[] data) throws Exception{
-		
-		init();
-		for(int i = 0; i < data.length; i++){
-			
-			if(data[i] == 0x00){
-				zeroes++;
-				if(zeroes > 3) throw new Exception("Invalid Packet");
-			}
-			else if(data[i] == 0x01){
-				if(zeroes == 1 && (!read && !write)) read = true;
-				else throw new Exception("Invalid Packet");
-			}
-			else if(data[i] == 0x02){
-				if(zeroes == 1 && (!read && !write)) write = true;
-				else throw new Exception("Invalid Packet");
-			}
-			else if(!file){
-				if(zeroes == 1 && (read^write)) file = true;
-				else if(!file && zeroes > 1) throw new Exception("Inavlid Packet");
-			}
-			else if(!mode){
-				if(zeroes == 2 && file) mode = true;
-				else if(!mode && zeroes > 2) throw new Exception("Inavlid Packet");
-			}
-		}
-		if(zeroes != 3) throw new Exception("Invalid Packet");
-	}
-	
-	/**
-	 * Creates a packet of four bytes to be later sent to the intermediate host
-	 * @return byte[] that contains the packet of four bytes
-	 */
-	public byte[] createSendBytes(){
-		
-		byte[] sendBytes = new byte[4];
-		
-		//bytes are the same for both read and write requests
-		sendBytes[0] = 0x00;
-		sendBytes[2] = 0x00;
-		
-		//if a read request
-		if(read){
-			sendBytes[1] = 0x03;
-			sendBytes[3] = 0x01;
-		}
-		
-		//if a write request
-		else if(write){
-			sendBytes[1] = 0x04;		
-			sendBytes[3] = 0x00;
-		}	
-		return sendBytes;
-	}
-	
-	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
-		
-		printSend(sendPacket);
-		
-		try{
-			 socket.send(packet);
-		 }
-		 catch(IOException io){
-			 io.printStackTrace();
-			 System.exit(1);
-		 }
-	
 	}
 	
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("Server: Waiting for Packet.\n");
-		
 		try {        
 	         System.out.println("Waiting...");
 	         socket.receive(packet);
@@ -183,8 +100,51 @@ public class EchoServer {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		
 		printReceive(packet);
+	}
+	
+	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
+		
+		printSend(sendPacket);
+		try{
+			 socket.send(packet);
+		 }
+		 catch(IOException io){
+			 io.printStackTrace();
+			 System.exit(1);
+		 }
+	}
+
+	/**
+	 * Parses a byte array and checks if is a read request or a write request
+	 * @param data, byte[] that contains the request
+	 */
+	public void checkReadWrite(byte[] data){
+		
+		if(data[1] == one) read = true;
+		else if(data[1] == zero) write = false;
+	}
+	
+	public byte[] createDataPacket(){
+		
+		byte[] data = new byte[4];
+		
+		data[0] = zero;
+		data[1] = three;
+		data[2] = zero;
+		data[3] = one;
+		return data;
+	}
+	
+	public byte[] createACKPacket(){
+		
+		byte[] ack = new byte[4];
+		
+		ack[0] = zero;
+		ack[1] = four;
+		ack[2] = zero;
+		ack[3] = zero;
+		return ack;
 	}
 	
 	/**

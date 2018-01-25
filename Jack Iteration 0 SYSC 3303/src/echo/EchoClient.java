@@ -25,13 +25,19 @@ public class EchoClient {
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
-	public EchoClient(){
+	public EchoClient(String filename, String mode){
 		
 		try{
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
-			byte[] data = new byte[2];
+			byte[] data = new byte[4];
 		    receivePacket = new DatagramPacket(data, data.length);
+		    
+		    if(filename.equals(null)) this.filename = "";
+		    else this.filename = filename;
+		    
+		    if(mode.equals(null)) this.mode = "";
+		    else this.mode = mode;
 		}
 		catch (SocketException se){
 			se.printStackTrace();
@@ -53,7 +59,6 @@ public class EchoClient {
 			sendPacket = createWRQPacket();
 			sendPack(sendReceiveSocket, sendPacket);
 			receivePack(sendReceiveSocket, receivePacket);
-		    
 	} 
 
 	/**
@@ -99,7 +104,7 @@ public class EchoClient {
 	
 	public DatagramPacket createWRQPacket(){
 		
-		byte[] wrq = new byte[2];
+		byte[] wrq = new byte[20];
 		wrq[0] = one;
 		wrq[1] = zero;
 		
@@ -185,8 +190,8 @@ public class EchoClient {
 	}
 	
 	public static void main(String args[]){
-		EchoClient c = new EchoClient();
-		
+		EchoClient c = new EchoClient("test.txt", "netascii");
+		c.sendAndReceive();
 	}
 }
 

@@ -59,14 +59,13 @@ public class EchoServer {
 			byte response[] = new byte[4];
 			
 			receivePacket = new DatagramPacket(data, data.length);
-			System.out.println("Server: Waiting for Packet.\n");
 			
 			receivePack(receiveSocket, receivePacket);
 			
 			checkReadWrite(receivePacket.getData());
 			
 			if(read) response = createDataPacket();
-			else if(write) response = createDataPacket();
+			else if(write) response = createACKPacket();
 			 
 			//constructs a socket to send packets from any available port
 			try {
@@ -94,7 +93,6 @@ public class EchoServer {
 		
 		System.out.println("Server: Waiting for Packet.\n");
 		try {        
-	         System.out.println("Waiting...");
 	         socket.receive(packet);
 	    } catch (IOException e) {
 	         e.printStackTrace();

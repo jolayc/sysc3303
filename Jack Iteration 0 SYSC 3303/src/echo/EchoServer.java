@@ -24,16 +24,18 @@ public class EchoServer {
 	private boolean read;  //true if request send is a read request
 	private boolean write; //true if request send is a write request
 	
+	private boolean running = true; //true when server is running
+	
 	private DatagramSocket receiveSocket, sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	
 	public EchoServer(){
-		
-		try{
+		int port = 69;
+		try {
 			//Constructs a socket to receive packets bounded to port 69
-			receiveSocket = new DatagramSocket(69);
+			receiveSocket = new DatagramSocket(port);
 		}
-		catch(SocketException se){
+		catch (SocketException se){
 			se.printStackTrace();
 			System.exit(1);
 		}
@@ -51,8 +53,8 @@ public class EchoServer {
 	 */
 	public void receiveAndSend(){
 		
-		//will repeat "forever"
-		while(true){
+		// no longer repeating "forever"
+		while(running){
 			
 			//constructs a datagram packet to receive packets 20 bytes long
 			byte data[] = new byte[20];	
@@ -87,6 +89,7 @@ public class EchoServer {
 			 
 			 sendSocket.close();
 		}
+		shutdown(); // shutdown when no longer running
 	}
 	
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
@@ -184,17 +187,19 @@ public class EchoServer {
 	    System.out.println(received + "\n");
 	}
 	
-	private byte[] toBytes(byte[] b) {
-		//TO-DO: return file to be sent as byte array	
-		return null;
+	private void shutdown() {
+		receiveSocket.close();
+		System.out.println("Server has stopped taking requests.");
+		while (true) {} // allows for transfers in progress (before shutdown) to complete
 	}
 	
-	private void shutdown() {
-		sendReceiveSocket.close();
-		//System.exit(1); // note: not sure if this will be needed
+	// TO-DO: call stop() where necessary
+	private void stop() {
+		running = false;	
 	}
+	
 	public static void main( String args[] ){
 		EchoServer s = new EchoServer();
-	    s.receiveAndSend();
+	    	s.receiveAndSend();
 	}
 }

@@ -189,6 +189,16 @@ public class EchoClient {
 		System.out.println(received);
 	}
 	
+	// TO-DO: change file being sent into byte array
+	private byte[] toBytes(byte[] b) {
+		return null;
+	}
+	
+	private void shutdown() {
+		sendReceiveSocket.close();
+		// System.exit(0); // not sure if this is necessary
+	}
+	
 	public static void main(String args[]){
 		EchoClient c = new EchoClient("test.txt", "netascii");
 		c.sendAndReceive();

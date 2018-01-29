@@ -184,6 +184,15 @@ public class EchoServer {
 	    System.out.println(received + "\n");
 	}
 	
+	private byte[] toBytes(byte[] b) {
+		//TO-DO: return file to be sent as byte array	
+		return null;
+	}
+	
+	private void shutdown() {
+		sendReceiveSocket.close();
+		//System.exit(1); // note: not sure if this will be needed
+	}
 	public static void main( String args[] ){
 		EchoServer s = new EchoServer();
 	    s.receiveAndSend();

@@ -14,12 +14,12 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 
-public class EchoIntermediateHost {
+public class IntermediateHost {
 	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
 	
-	public EchoIntermediateHost(){
+	public IntermediateHost(){
 		try {
 			//Constructs a socket to receive packets bounded to port 23
 			receiveSocket = new DatagramSocket(23);
@@ -154,7 +154,7 @@ public class EchoIntermediateHost {
 	}
 	
 	public static void main(String args[]){
-		EchoIntermediateHost h = new EchoIntermediateHost();
+		IntermediateHost h = new IntermediateHost();
 		h.receiveAndSend();
 	}
 

@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 
-public class EchoClient {
+public class Client {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
@@ -25,7 +25,7 @@ public class EchoClient {
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
-	public EchoClient(String filename, String mode){
+	public Client(String filename, String mode){
 		
 		try{
 			//constructs a socket to send and receive packets from any available port
@@ -53,11 +53,9 @@ public class EchoClient {
 				
 			sendPacket = createRRQPacket();
 			sendPack(sendReceiveSocket, sendPacket);
-			receivePack(sendReceiveSocket, receivePacket);
-			
-			
 			sendPacket = createWRQPacket();
 			sendPack(sendReceiveSocket, sendPacket);
+			receivePack(sendReceiveSocket, receivePacket);
 			receivePack(sendReceiveSocket, receivePacket);
 	} 
 
@@ -190,8 +188,10 @@ public class EchoClient {
 	}
 	
 	public static void main(String args[]){
-		EchoClient c = new EchoClient("test.txt", "netascii");
-		c.sendAndReceive();
+		Client c1 = new Client("test1.txt", "netascii");
+		Client c2 = new Client("test2.txt", "octet");
+		c1.sendAndReceive();
+		c2.sendAndReceive();
 	}
 }
 

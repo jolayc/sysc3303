@@ -15,7 +15,15 @@ import java.util.Scanner;
  */
 
 public class Server implements Runnable{
+	private final byte zero = 0x00;
+	private final byte one = 0x01;
+	private final byte three = 0x03;
+	private final byte four = 0x04;
+
+	private boolean read;  //true if request send is a read request
+	private boolean write; //true if request send is a write request
 	
+<<<<<<< HEAD
 	private final int port = 69;
 	
 	private final byte zero = 0x00;
@@ -28,6 +36,11 @@ public class Server implements Runnable{
 	private boolean write; //true if request send is a write request
 	private boolean running;
 	
+=======
+	private int port;
+	private boolean running;	
+	private DatagramPacket sendPacket, receivePacket;
+>>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 	private DatagramSocket receiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	
@@ -47,11 +60,29 @@ public class Server implements Runnable{
 	/**
 	 * Runs the server
 	 */
-	public synchronized void run() {
+	public void run() {
 		
 			System.out.println("Server: print exit to exit");
+<<<<<<< HEAD
 	
+=======
+			
+			byte data[] = new byte[20];	
+			byte response[] = new byte[4];
+			
+			receivePacket = new DatagramPacket(data, data.length);
+		
+			receivePack(receiveSocket, receivePacket);
+			
+			checkReadWrite(receivePacket.getData());
+			
+>>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 			while(isRunning()){
+<<<<<<< HEAD
+=======
+				// Check request type
+				//new Thread(new ServerThread(receiveSocket)).start();
+>>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 				
 				byte data[] = new byte[20];	
 				
@@ -119,6 +150,51 @@ public class Server implements Runnable{
 	
 	
 	/**
+	 * Receives a packet from a socket
+	 * @param socket, DatagramSocket where the packet data will be received from
+	 * @param packet, DatagramPacket where the data from the socket will be stored
+	 */
+	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
+		
+		try {        
+	         socket.receive(packet);
+	    } catch (IOException e) {
+	         e.printStackTrace();
+	         System.exit(1);
+	    }
+		printReceive(packet);
+	}
+	
+	/**
+	 * Sends a packet to a socket
+	 * @param socket, DatagramSocket where the packet will be sent
+	 * @param packet, DatagramPacket that will be sent
+	 */
+	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
+		
+		printSend(sendPacket);
+		try{
+			 socket.send(packet);
+		 }
+		 catch(IOException io){
+			 io.printStackTrace();
+			 System.exit(1);
+		 }
+	}
+
+	/**
+	 * Parses a byte array and checks if is a read request or a write request
+	 * @param data, byte[] that contains the request
+	 */
+	public void checkReadWrite(byte[] data){
+		
+		read = false;
+		write = false;
+		
+		if(data[1] == one) read = true;
+		else if(data[1] == zero) write = true;
+	}
+	/**
 	 * Stops the running loop
 	 */
 	public synchronized void stop(){
@@ -126,7 +202,7 @@ public class Server implements Runnable{
 	}
 	
 	public synchronized boolean isRunning(){
-		return this.running;
+		return running;
 	}
 	
 	/**
@@ -137,6 +213,13 @@ public class Server implements Runnable{
 		System.out.println("Server has stopped taking requests.");
 	}
 	
+<<<<<<< HEAD
+=======
+	/**
+	 * Prints information relating to a send request
+	 * @param packet, DatagranPacket that is used in the send request
+	 */
+>>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 	private void printSend(DatagramPacket packet){
 		System.out.println( "Server: Sending packet");
 	    System.out.println("To host: " + packet.getAddress());

@@ -14,9 +14,6 @@ import java.util.Arrays;
  */
 
 
-import java.io.IOException;
-import java.net.*;
-import java.util.Arrays;
 import java.io.File;
 
 
@@ -53,8 +50,13 @@ public class Client {
 		}
 	}
 	
-	public synchronized void send(){
+	public void sendRead(){
 		sendPacket = createRRQPacket();
+		sendPack(sendReceiveSocket, sendPacket);
+	}
+	
+	public void sendWrite(){
+		sendPacket = createWRQPacket();
 		sendPack(sendReceiveSocket, sendPacket);
 	}
 	
@@ -71,7 +73,7 @@ public class Client {
 	 * @param socket, DatagramSocket where the packet will be sent
 	 * @param packet, DatagramPacket that will be sent
 	 */
-	public synchronized void sendPack(DatagramSocket socket, DatagramPacket packet) {
+	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
 		
 		printSend(sendPacket);
 		try{
@@ -88,7 +90,7 @@ public class Client {
 	 * @param socket, DatagramSocket where the packet data will be received from
 	 * @param packet, DatagramPacket where the data from the socket will be stored
 	 */
-	public synchronized void receivePack(DatagramSocket socket, DatagramPacket packet) {
+	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("Client: Waiting for Packet.\n");
 		try {        
@@ -228,9 +230,9 @@ public class Client {
 	public static void main(String args[]){
 		Client c1 = new Client("test1.txt", "netascii");
 		Client c2 = new Client("test2.txt", "octet");
-		c1.send();
-		c2.send();
+		c1.sendRead();
 		c1.receive();
+		c2.sendWrite();
 		c2.receive();
 	}
 }

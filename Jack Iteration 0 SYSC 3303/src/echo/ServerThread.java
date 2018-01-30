@@ -11,38 +11,33 @@ public class ServerThread implements Runnable{
 	private final byte three = 0x03;
 	private final byte four = 0x04;
 
-	private boolean read;  //true if request send is a read request
-	private boolean write; //true if request send is a write request
+	private final String read = "READ";
+	private final String write = "WRITE";
 	
-
-	private DatagramSocket receiveSocket, sendSocket;
+	private String message;
+	private byte response[] = null;
+	
+	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
+	
+	
 	
 	/**
 	 * Constructor for ServerThread
 	 * @param socket, DatagramSocket where data will be received
 	 */
-	public ServerThread(DatagramSocket socket){
-		this.receiveSocket = socket;
-		this.read = false;
-		this.write = false;
+	public ServerThread(DatagramPacket receivePacket, String message){
+		this.message = message;
+		this.receivePacket = receivePacket;
 	}
 
 	/**
 	 * Runs the thread
 	 */
 	public void run() {
-		byte data[] = new byte[20];	
-		byte response[] = new byte[4];
 	
-		receivePacket = new DatagramPacket(data, data.length);
-	
-		receivePack(receiveSocket, receivePacket);
-		
-		checkReadWrite(receivePacket.getData());
-	
-		if(read) response = createDataPacket();
-		else if(write) response = createACKPacket();
+		if(message.equals(read)) response = createDataPacket();
+		else if(message.equals(write)) response = createACKPacket();
 	 
 		//constructs a socket to send packets from any available port
 		try {
@@ -65,22 +60,6 @@ public class ServerThread implements Runnable{
 	}
 	
 	/**
-	 * Receives a packet from a socket
-	 * @param socket, DatagramSocket where the packet data will be received from
-	 * @param packet, DatagramPacket where the data from the socket will be stored
-	 */
-	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
-		
-		try {        
-	         socket.receive(packet);
-	    } catch (IOException e) {
-	         e.printStackTrace();
-	         System.exit(1);
-	    }
-		printReceive(packet);
-	}
-	
-	/**
 	 * Sends a packet to a socket
 	 * @param socket, DatagramSocket where the packet will be sent
 	 * @param packet, DatagramPacket that will be sent
@@ -97,18 +76,6 @@ public class ServerThread implements Runnable{
 		 }
 	}
 
-	/**
-	 * Parses a byte array and checks if is a read request or a write request
-	 * @param data, byte[] that contains the request
-	 */
-	public void checkReadWrite(byte[] data){
-		
-		read = false;
-		write = false;
-		
-		if(data[1] == one) read = true;
-		else if(data[1] == zero) write = true;
-	}
 	
 	/**
 	 * Creates a data packet
@@ -148,17 +115,6 @@ public class ServerThread implements Runnable{
 		System.out.println( "Server: Sending packet");
 	    System.out.println("To host: " + packet.getAddress());
 	    System.out.println("Destination host port: " + packet.getPort());
-	    printStatus(packet);
-	}
-	
-	/**
-	 * Prints information relating to a receive request
-	 * @param packet, DatagramPacket that is used in the receive request
-	 */
-	private void printReceive(DatagramPacket packet){
-		System.out.println("Server: Packet received");
-	    System.out.println("From host: " + packet.getAddress());
-	    System.out.println("Host port: " + packet.getPort());
 	    printStatus(packet);
 	}
 	

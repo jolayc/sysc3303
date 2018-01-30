@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 
-public class ServerThread implements Runnable{
+public class ServerThread implements Runnable {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
@@ -32,14 +32,9 @@ public class ServerThread implements Runnable{
 	 * Runs the thread
 	 */
 	public void run() {
-		byte data[] = new byte[20];	
-		byte response[] = new byte[4];
-	
-		receivePacket = new DatagramPacket(data, data.length);
-	
-		receivePack(receiveSocket, receivePacket);
 		
-		checkReadWrite(receivePacket.getData());
+		byte response[] = new byte[4];
+
 	
 		if(read) response = createDataPacket();
 		else if(write) response = createACKPacket();
@@ -97,18 +92,6 @@ public class ServerThread implements Runnable{
 		 }
 	}
 
-	/**
-	 * Parses a byte array and checks if is a read request or a write request
-	 * @param data, byte[] that contains the request
-	 */
-	public void checkReadWrite(byte[] data){
-		
-		read = false;
-		write = false;
-		
-		if(data[1] == one) read = true;
-		else if(data[1] == zero) write = true;
-	}
 	
 	/**
 	 * Creates a data packet

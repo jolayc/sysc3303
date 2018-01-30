@@ -13,6 +13,13 @@ import java.util.Arrays;
  * @date: January 18, 2018
  */
 
+
+import java.io.IOException;
+import java.net.*;
+import java.util.Arrays;
+import java.io.File;
+
+
 public class Client {
 	
 	private final byte zero = 0x00;
@@ -21,12 +28,14 @@ public class Client {
 	private String filename;
 	private String mode;
 	
+	private File file;
+	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
 	public Client(String filename, String mode){
 		
-		try{
+		try {
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
 			byte[] data = new byte[4];
@@ -210,6 +219,10 @@ public class Client {
 	    //prints the packet as text
 		String received = new String(packet.getData(),0,len);
 		System.out.println(received);
+	}
+	
+	private byte[] toBytes(File f) {
+		return null;
 	}
 	
 	public static void main(String args[]){

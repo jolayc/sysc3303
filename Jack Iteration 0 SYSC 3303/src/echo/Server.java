@@ -127,40 +127,6 @@ public class Server implements Runnable{
 		if(data[1] == one) read = true;
 		else if(data[1] == zero) write = true;
 	}
-	
-	
-	/**
-	 * Receives a packet from a socket
-	 * @param socket, DatagramSocket where the packet data will be received from
-	 * @param packet, DatagramPacket where the data from the socket will be stored
-	 */
-	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
-		
-		try {        
-	         socket.receive(packet);
-	    } catch (IOException e) {
-	         e.printStackTrace();
-	         System.exit(1);
-	    }
-		printReceive(packet);
-	}
-	
-	/**
-	 * Sends a packet to a socket
-	 * @param socket, DatagramSocket where the packet will be sent
-	 * @param packet, DatagramPacket that will be sent
-	 */
-	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
-		
-		printSend(sendPacket);
-		try{
-			 socket.send(packet);
-		 }
-		 catch(IOException io){
-			 io.printStackTrace();
-			 System.exit(1);
-		 }
-	}
 
 	/**
 	 * Parses a byte array and checks if is a read request or a write request

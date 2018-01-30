@@ -1,18 +1,17 @@
 package echo;
 
+import java.io.IOException;
+import java.net.*;
+import java.util.Arrays;
 
 /**
- * EchoIntermediateHost
+ * IntermediateHost
  * Intemediate Host of a simple echo server.
  * The intermediate host receives from a client a request packet and then sends it to the server
  * It then receives from the server a reply packet back to the original client
  * @author: Jack MacDougall
  * @date: January 18, 2018
  */
-
-import java.io.IOException;
-import java.net.*;
-import java.util.Arrays;
 
 public class IntermediateHost {
 	
@@ -70,7 +69,6 @@ public class IntermediateHost {
 		    //creates a datagram packet that will contain sendData that will be ported to port 69
 		    try {
 				sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), 69);
-				System.out.println("IntermediateHost: Waiting for Packet from server.\n");
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -87,6 +85,11 @@ public class IntermediateHost {
 		}
 	}
 	
+	/**
+	 * Sends a packet to a socket
+	 * @param socket, DatagramSocket where the packet will be sent
+	 * @param packet, DatagramPacket that will be sent
+	 */
 	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
 		
 		try{
@@ -99,12 +102,15 @@ public class IntermediateHost {
 		
 	}
 	
+	/**
+	 * Receives a packet from a socket
+	 * @param socket, DatagramSocket where the packet data will be received from
+	 * @param packet, DatagramPacket where the data from the socket will be stored
+	 */
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("IntermediateHost: Waiting for Packet.\n");
-		
 		try {        
-	         System.out.println("Waiting...");
 	         socket.receive(packet);
 	    } catch (IOException e) {
 	         e.printStackTrace();

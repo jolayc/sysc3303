@@ -1,18 +1,17 @@
 package echo;
 
+import java.io.IOException;
+import java.net.*;
+import java.util.Arrays;
 
 /**
- * EchoClient
+ * Client
  * Client side of a simple echo server.
  * The client sends a request packet to the intermediate host
  * It then recieves a reply packet from the intermediate host.
  * @author: Jack MacDougall
  * @date: January 18, 2018
  */
-
-import java.io.IOException;
-import java.net.*;
-import java.util.Arrays;
 
 public class Client {
 	
@@ -45,26 +44,25 @@ public class Client {
 		}
 	}
 	
+	public synchronized void send(){
+		sendPacket = createRRQPacket();
+		sendPack(sendReceiveSocket, sendPacket);
+	}
+	
 	/**
 	 * Sends a request packet to the intermediate host
 	 * Receives a response packet from the intermediate host 
 	 */
-	public void sendAndReceive(){
-				
-			sendPacket = createRRQPacket();
-			sendPack(sendReceiveSocket, sendPacket);
-			sendPacket = createWRQPacket();
-			sendPack(sendReceiveSocket, sendPacket);
-			receivePack(sendReceiveSocket, receivePacket);
+	public synchronized void receive(){		
 			receivePack(sendReceiveSocket, receivePacket);
 	} 
 
 	/**
-	 * Sends a request packet to the intermediate host
-	 * Receives a response packet from the intermediate host 
+	 * Sends a packet to a socket
+	 * @param socket, DatagramSocket where the packet will be sent
+	 * @param packet, DatagramPacket that will be sent
 	 */
-	
-	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
+	public synchronized void sendPack(DatagramSocket socket, DatagramPacket packet) {
 		
 		printSend(sendPacket);
 		try{
@@ -76,7 +74,12 @@ public class Client {
 		 }
 	}
 	
-	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
+	/**
+	 * Receives a packet from a socket
+	 * @param socket, DatagramSocket where the packet data will be received from
+	 * @param packet, DatagramPacket where the data from the socket will be stored
+	 */
+	public synchronized void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("Client: Waiting for Packet.\n");
 		try {        
@@ -89,6 +92,10 @@ public class Client {
 		printReceive(packet);
 	}
 	
+	/**
+	 * Creates read request packet
+	 * @return DatagramPacket containing read request
+	 */
 	public DatagramPacket createRRQPacket(){
 		
 		byte[] rrq = new byte[100];
@@ -100,6 +107,10 @@ public class Client {
 		return createSendPacket(rrq);
 	}
 	
+	/**
+	 * Creates write request packet
+	 * @return DatagramPacket containing read request
+	 */
 	public DatagramPacket createWRQPacket(){
 		
 		byte[] wrq = new byte[20];
@@ -111,6 +122,10 @@ public class Client {
 		return createSendPacket(wrq);
 	}
 	
+	/**
+	 * Finishes the request packet for both read and write
+	 * @param rq, byte[] with start of request
+	 */
 	private void finishRRQOrWRQ(byte[] rq){
 		
 		int offset = 0;
@@ -132,6 +147,11 @@ public class Client {
 		rq[offset] = zero;
 	}
 	
+	/**
+	 * Creates a send packet
+	 * @param rq, byte[] with request
+	 * @return DatagramPacket with send request
+	 */
 	public DatagramPacket createSendPacket(byte[] rq){
 		DatagramPacket send = null;
 		try {
@@ -144,6 +164,11 @@ public class Client {
 		return send;
 	}
 	
+	/**
+	 * Creates a send packet
+	 * @param block, byte[] with data
+	 * @return DatagramPacket with receive request
+	 */
 	public DatagramPacket createReceivePacket(byte[] block){
 		return new DatagramPacket(block, block.length);
 	}
@@ -190,8 +215,10 @@ public class Client {
 	public static void main(String args[]){
 		Client c1 = new Client("test1.txt", "netascii");
 		Client c2 = new Client("test2.txt", "octet");
-		c1.sendAndReceive();
-		c2.sendAndReceive();
+		c1.send();
+		c2.send();
+		c1.receive();
+		c2.receive();
 	}
 }
 

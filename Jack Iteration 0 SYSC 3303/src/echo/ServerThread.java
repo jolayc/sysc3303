@@ -18,10 +18,19 @@ public class ServerThread implements Runnable{
 	private DatagramSocket receiveSocket, sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	
+	/**
+	 * Constructor for ServerThread
+	 * @param socket, DatagramSocket where data will be received
+	 */
 	public ServerThread(DatagramSocket socket){
 		this.receiveSocket = socket;
+		this.read = false;
+		this.write = false;
 	}
 
+	/**
+	 * Runs the thread
+	 */
 	public void run() {
 		byte data[] = new byte[20];	
 		byte response[] = new byte[4];
@@ -51,10 +60,16 @@ public class ServerThread implements Runnable{
 			System.exit(1);
 		}
 	 
-		sendPack(sendSocket, sendPacket);	
+		sendPack(sendSocket, sendPacket);
+		sendSocket.close();
 	}
 	
-public void receivePack(DatagramSocket socket, DatagramPacket packet) {
+	/**
+	 * Receives a packet from a socket
+	 * @param socket, DatagramSocket where the packet data will be received from
+	 * @param packet, DatagramPacket where the data from the socket will be stored
+	 */
+	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		try {        
 	         socket.receive(packet);
@@ -65,6 +80,11 @@ public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		printReceive(packet);
 	}
 	
+	/**
+	 * Sends a packet to a socket
+	 * @param socket, DatagramSocket where the packet will be sent
+	 * @param packet, DatagramPacket that will be sent
+	 */
 	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
 		
 		printSend(sendPacket);
@@ -90,6 +110,10 @@ public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		else if(data[1] == zero) write = true;
 	}
 	
+	/**
+	 * Creates a data packet
+	 * @return the data packet that was created
+	 */
 	public byte[] createDataPacket(){
 		
 		byte[] data = new byte[4];
@@ -101,6 +125,10 @@ public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		return data;
 	}
 	
+	/**
+	 * Creates an acknowledgment packet
+	 * @return the acknowledgement packet that was created
+	 */
 	public byte[] createACKPacket(){
 		
 		byte[] ack = new byte[4];

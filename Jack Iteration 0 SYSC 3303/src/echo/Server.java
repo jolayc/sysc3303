@@ -1,7 +1,10 @@
 package echo;
 
+import java.net.*;
+import java.util.Scanner;
+
 /**
- * EchoServer
+ * Server
  * Server side of a simple echo server.
  * The server receives from a client a request packet sent from the intermediate host
  * It then sends a reply packet back to the intermediate host.
@@ -9,20 +12,16 @@ package echo;
  * @date: January 18, 2018
  */
 
-import java.net.*;
-
 public class Server implements Runnable{
 	
 	private int port;
-	
-	private boolean running = true;
-	
+	private boolean running;	
 	private DatagramSocket receiveSocket;
-	
 	protected Thread listener;
 	
 	public Server(){
 		this.port = 69;
+		running = true;
 		try {
 			//Constructs a socket to receive packets bounded to port 69
 			receiveSocket = new DatagramSocket(port);
@@ -33,36 +32,54 @@ public class Server implements Runnable{
 		}
 	}
 	
-	public void run() {
+	/**
+	 * Runs the server
+	 */
+	public synchronized void run() {
 		
+			System.out.println("Server: print exit to exit");
+			
 			synchronized(this){
 				this.listener = Thread.currentThread();
 			}
-			while(this.running()){
+			
+			while(isRunning()){
 				new Thread(new ServerThread(receiveSocket)).start();
+				
 			}
 			shutdown();
-		}
-	
-	public synchronized void stop(){
-		this.running = true;
-		receiveSocket.close();
 	}
 	
-	public synchronized boolean running(){
+	/**
+	 * Stops the running loop
+	 */
+	public synchronized void stop(){
+		running = false;
+	}
+	
+	public synchronized boolean isRunning(){
 		return this.running;
 	}
 	
+	/**
+	 * Shuts down the server
+	 */
 	private synchronized void shutdown() {
 		receiveSocket.close();
 		System.out.println("Server has stopped taking requests.");
-		while (true) {} // allows for transfers in progress (before shutdown) to complete
 	}
 	
 	public static void main( String args[] ){
-		Server s = new Server();
-		s.run();
+		Server server = new Server();
+		new Thread(server).start();
+		System.out.println("Hee");
+		Scanner scan = new Scanner(System.in);
+		if(scan.hasNextLine()){
+			String message = scan.nextLine();
+			if(message.equals("exit")){
+				scan.close();
+				server.stop();
+			}
+		}
 	}
-
-	
 }

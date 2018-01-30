@@ -35,18 +35,14 @@ public class ServerThread implements Runnable {
 	 * Runs the thread
 	 */
 	public void run() {
-<<<<<<< HEAD
 	
 		if(message.equals(read)) response = createDataPacket();
 		else if(message.equals(write)) response = createACKPacket();
-=======
-		
+	
 		byte response[] = new byte[4];
 
-	
 		if(read) response = createDataPacket();
 		else if(write) response = createACKPacket();
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 	 
 		//constructs a socket to send packets from any available port
 		try {

@@ -72,7 +72,7 @@ public class Server implements Runnable{
 	public static void main( String args[] ){
 		Server server = new Server();
 		new Thread(server).start();
-		System.out.println("Hee");
+
 		Scanner scan = new Scanner(System.in);
 		if(scan.hasNextLine()){
 			String message = scan.nextLine();

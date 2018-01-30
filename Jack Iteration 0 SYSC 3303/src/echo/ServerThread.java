@@ -40,9 +40,6 @@ public class ServerThread implements Runnable {
 		else if(message.equals(write)) response = createACKPacket();
 	
 		byte response[] = new byte[4];
-
-		if(read) response = createDataPacket();
-		else if(write) response = createACKPacket();
 	 
 		//constructs a socket to send packets from any available port
 		try {

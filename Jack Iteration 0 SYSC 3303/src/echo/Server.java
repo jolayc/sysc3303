@@ -23,11 +23,7 @@ public class Server implements Runnable{
 	private boolean read;  //true if request send is a read request
 	private boolean write; //true if request send is a write request
 	
-<<<<<<< HEAD
 	private final int port = 69;
-	
-	private final byte zero = 0x00;
-	private final byte one = 0x01;
 	
 	private final String readMessage = "READ";
 	private final String writeMessage = "WRITE";
@@ -36,11 +32,10 @@ public class Server implements Runnable{
 	private boolean write; //true if request send is a write request
 	private boolean running;
 	
-=======
 	private int port;
 	private boolean running;	
 	private DatagramPacket sendPacket, receivePacket;
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
+
 	private DatagramSocket receiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	
@@ -63,26 +58,11 @@ public class Server implements Runnable{
 	public void run() {
 		
 			System.out.println("Server: print exit to exit");
-<<<<<<< HEAD
 	
-=======
-			
-			byte data[] = new byte[20];	
-			byte response[] = new byte[4];
-			
-			receivePacket = new DatagramPacket(data, data.length);
-		
-			receivePack(receiveSocket, receivePacket);
-			
-			checkReadWrite(receivePacket.getData());
-			
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 			while(isRunning()){
-<<<<<<< HEAD
-=======
+
 				// Check request type
 				//new Thread(new ServerThread(receiveSocket)).start();
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 				
 				byte data[] = new byte[20];	
 				
@@ -213,13 +193,10 @@ public class Server implements Runnable{
 		System.out.println("Server has stopped taking requests.");
 	}
 	
-<<<<<<< HEAD
-=======
 	/**
 	 * Prints information relating to a send request
 	 * @param packet, DatagranPacket that is used in the send request
 	 */
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 	private void printSend(DatagramPacket packet){
 		System.out.println( "Server: Sending packet");
 	    System.out.println("To host: " + packet.getAddress());

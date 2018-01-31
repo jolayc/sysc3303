@@ -27,8 +27,8 @@ public class Server implements Runnable{
 	
 	private final String readMessage = "READ";
 	private final String writeMessage = "WRITE";
-	
-	private boolean running;	
+
+	private boolean running;
 
 	private DatagramSocket receiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
@@ -54,8 +54,7 @@ public class Server implements Runnable{
 			System.out.println("Server: print exit to exit");
 	
 			while(isRunning()){
-
-				ServerThread t;
+	
 				byte data[] = new byte[20];					
 				
 				receivePacket = new DatagramPacket(data, data.length);

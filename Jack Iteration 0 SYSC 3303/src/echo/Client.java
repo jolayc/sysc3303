@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Client
@@ -13,8 +16,6 @@ import java.io.File;
  * @author: Jack MacDougall
  * @date: January 18, 2018
  */
-
-
 
 
 public class Client {
@@ -224,7 +225,9 @@ public class Client {
 	}
 	
 	private byte[] toBytes(File f) {
-		return null;
+		Path path = Paths.get("C:\\Users\\karlschnalzer\\Desktop");
+		byte[] fb= f.readAllBytes(path);
+		return fb;
 	}
 	
 	public static void main(String args[]){

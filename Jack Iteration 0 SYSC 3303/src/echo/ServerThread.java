@@ -40,6 +40,10 @@ public class ServerThread extends Thread implements Runnable {
 		if(message.equals(read)) response = createDataPacket();
 		else if(message.equals(write)) response = createACKPacket();
 
+	
+		if(message.equals(read)) response = createDataPacket();
+		else if(message.equals(write)) response = createACKPacket();
+	
 	 
 			//constructs a socket to send packets from any available port
 		try {

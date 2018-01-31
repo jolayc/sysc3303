@@ -3,6 +3,7 @@ package echo;
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+import java.io.File;
 
 /**
  * Client
@@ -14,7 +15,6 @@ import java.util.Arrays;
  */
 
 
-import java.io.File;
 
 
 public class Client {

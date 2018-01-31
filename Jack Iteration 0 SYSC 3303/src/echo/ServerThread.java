@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 
-public class ServerThread implements Runnable {
+public class ServerThread extends Thread implements Runnable {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
@@ -16,11 +16,10 @@ public class ServerThread implements Runnable {
 	
 	private String message;
 	private byte response[] = null;
+
 	
 	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
-	
-	
 	
 	/**
 	 * Constructor for ServerThread
@@ -35,20 +34,14 @@ public class ServerThread implements Runnable {
 	 * Runs the thread
 	 */
 	public void run() {
-<<<<<<< HEAD
-	
-		if(message.equals(read)) response = createDataPacket();
-		else if(message.equals(write)) response = createACKPacket();
-=======
 		
 		byte response[] = new byte[4];
+			
+		if(message.equals(read)) response = createDataPacket();
+		else if(message.equals(write)) response = createACKPacket();
 
-	
-		if(read) response = createDataPacket();
-		else if(write) response = createACKPacket();
->>>>>>> branch 'jack' of https://github.com/jolayc/sysc3303.git
 	 
-		//constructs a socket to send packets from any available port
+			//constructs a socket to send packets from any available port
 		try {
 			sendSocket = new DatagramSocket();
 		} catch (SocketException e1) {
@@ -63,9 +56,10 @@ public class ServerThread implements Runnable {
 			e.printStackTrace();
 			System.exit(1);
 		}
-	 
+			
 		sendPack(sendSocket, sendPacket);
 		sendSocket.close();
+		
 	}
 	
 	/**
@@ -84,7 +78,6 @@ public class ServerThread implements Runnable {
 			 System.exit(1);
 		 }
 	}
-
 	
 	/**
 	 * Creates a data packet

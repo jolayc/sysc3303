@@ -13,7 +13,7 @@ import java.util.Scanner;
  * The response is created by a server thread created by the server
  * (multithreading)
  */
-public class server implements Runnable{
+public class server {
 	
 	private DatagramSocket sendSocket, receiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -37,12 +37,13 @@ public class server implements Runnable{
 		}
 	}
 	
-	public void run() {
-		while (isRunning()) {
+	private void sendAndReceive() {
+		ServerExit exitListener = new ServerExit("Exit handler", this);
+		exitListener.start();
+		while(running) {
 			byte[] data = new byte[20];
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
-			System.out.println(Boolean.toString(running));
 			receivePack(receiveSocket, receivePacket);
 			// Check request
 			String rq = checkReadWrite(receivePacket.getData());
@@ -65,21 +66,11 @@ public class server implements Runnable{
 	}
 	
 	/**
-	 * Returns the running flag to check if 
-	 * server should still be running
-	 * @return True if server is running, False otherwise
-	 */
-	private synchronized boolean isRunning() {
-		System.out.print(Boolean.toString(running));
-		return running;
-	}
-	
-	/**
 	 * Stops the continuous running loop
 	 * of the server by setting the running flag 
 	 * to false
 	 */
-	private synchronized void stop() {
+	public void stop() {
 		running = false;
 	}
 	
@@ -87,7 +78,7 @@ public class server implements Runnable{
 	 * Shuts down the server by closing the socket used
 	 * for receiving
 	 */
-	private synchronized void shutdown() {
+	private void shutdown() {
 		receiveSocket.close();
 		System.out.println("Server: Requests are no longer being taken.");
 		while (true) {} // allows for file transfers in progress to finish but refuse to create new connections
@@ -148,18 +139,7 @@ public class server implements Runnable{
 	}
 	
 	public static void main(String[] args) {
-		server server = new server();
-		new Thread(server).start();
-		
-		System.out.println("Server: To exit, enter 'exit'");
-		Scanner sc = new Scanner(System.in);
-		if (sc.hasNextLine()) {
-			String msg = sc.nextLine().toLowerCase();
-			if (msg.equals("exit")) {
-				sc.close();
-				System.out.println("Now");
-				server.stop();
-			}
-		}
+		server s = new server();
+		s.sendAndReceive();
 	}
 }

@@ -13,7 +13,7 @@ import java.util.Scanner;
  * The response is created by a server thread created by the server
  * (multithreading)
  */
-public class server {
+public class server implements Runnable{
 	
 	private DatagramSocket sendSocket, receiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -42,6 +42,7 @@ public class server {
 			byte[] data = new byte[20];
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
+			System.out.println(Boolean.toString(running));
 			receivePack(receiveSocket, receivePacket);
 			// Check request
 			String rq = checkReadWrite(receivePacket.getData());
@@ -69,6 +70,7 @@ public class server {
 	 * @return True if server is running, False otherwise
 	 */
 	private synchronized boolean isRunning() {
+		System.out.print(Boolean.toString(running));
 		return running;
 	}
 	
@@ -146,14 +148,17 @@ public class server {
 	}
 	
 	public static void main(String[] args) {
-		server s = new server();
+		server server = new server();
+		new Thread(server).start();
+		
 		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);
 		if (sc.hasNextLine()) {
 			String msg = sc.nextLine().toLowerCase();
 			if (msg.equals("exit")) {
 				sc.close();
-				s.stop();
+				System.out.println("Now");
+				server.stop();
 			}
 		}
 	}

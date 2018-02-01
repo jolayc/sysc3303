@@ -70,13 +70,12 @@ public class serverThread extends Thread implements Runnable {
 			System.exit(1);
 		}
 	}
-	
 	/**
-	 * Create a data packet containing {0,1,2,3,}
+	 * Create a data packet containing {0,3,0,1}
 	 * @return byte[4] data packet
 	 */
 	public byte[] createDataPacket() {
-		return new byte[] {0,1,2,3};
+		return new byte[] {0,3,0,1};
 	}
 	
 	/**
@@ -84,7 +83,7 @@ public class serverThread extends Thread implements Runnable {
 	 * @return byte[4] acknowledge packet
 	 */
 	public byte[] createACKPacket() {
-		return new byte[] {0,4,0,0};
+		return new byte[] {0,4};
 	}
 	
 	// Print information relating to send request 

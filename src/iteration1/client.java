@@ -26,7 +26,7 @@ public class client {
 	private String filename;
 	private String mode;
 	
-	private Files file;
+	private int blockNum;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -44,6 +44,8 @@ public class client {
 		    
 		    if(mode.equals(null)) this.mode = "";
 		    else this.mode = mode;
+		    
+		    blockNum = 0;
 		}
 		catch (SocketException se){
 			se.printStackTrace();
@@ -54,21 +56,26 @@ public class client {
 	public void sendRead(){
 		sendPacket = createRRQPacket();
 		sendPack(sendReceiveSocket, sendPacket);
+		receivePacket = receivePack(sendReceiveSocket, sendPacket);
+		
 	}
 	
 	public void sendWrite(){
 		sendPacket = createWRQPacket();
 		sendPack(sendReceiveSocket, sendPacket);
+		receivePacket = receivePack(sendReceiveSocket, sendPacket);
+		if(checkACK(receivePacket.getData())) {
+			sendFile();
+		} else {
+			
+		}
 	}
 	
-	/**
-	 * Sends a request packet to the intermediate host
-	 * Receives a response packet from the intermediate host 
-	 */
-	public synchronized void receive(){		
-		receivePack(sendReceiveSocket, receivePacket);
-	} 
-
+	public boolean checkACK(byte[] b) {
+		byte[] tmp = new byte[] {0,4};
+		return Arrays.equals(tmp, b);
+	}
+	
 	/**
 	 * Sends a packet to a socket
 	 * @param socket, DatagramSocket where the packet will be sent
@@ -91,7 +98,7 @@ public class client {
 	 * @param socket, DatagramSocket where the packet data will be received from
 	 * @param packet, DatagramPacket where the data from the socket will be stored
 	 */
-	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
+	public DatagramPacket receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
 		System.out.println("Client: Waiting for Packet.\n");
 		try {        
@@ -102,6 +109,7 @@ public class client {
 	         System.exit(1);
 	    }
 		printReceive(packet);
+		return packet;
 	}
 	
 	/**
@@ -223,22 +231,25 @@ public class client {
 		System.out.println(received);
 	}
 	
-	private byte[] toBytes(Files f) {
-		
+	private byte[] toBytes() {
 		Path path = Paths.get("C:\\Users\\karlschnalzer\\Desktop"); /* CHANGE THIS TO PATH ON LAB MACHINE */
 		byte[] fb = null;
 		try {
-			fb = f.readAllBytes(path);
+			fb = Files.readAllBytes(path);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
 		return fb;
 	}
-	private void sendFile(Files fileToSend) {
-		byte [] bytesToSend = toBytes(fileToSend);
-		DatagramPacket PacketForFile = createSendPacket(bytesToSend);
-		sendPack(sendReceiveSocket,PacketForFile);
+	
+	private void sendFile() {
+		byte[] data = toBytes(); // the data being sent as a byte array 
+		int blockNum = (data.length / 512) + 1; // number of blocks being sent
+		// byte[] pack = new byte[4 + data.length]; // the DATA packet [OPCODE (2), BLOCK # (2), DATA (n)]
+		while () {
+			
+		}
 	}
 	
 	
@@ -246,8 +257,6 @@ public class client {
 		client c1 = new client("test1.txt", "netascii");
 		client c2 = new client("test2.txt", "octet");
 		c1.sendRead();
-		c1.receive();
 		c2.sendWrite();
-		c2.receive();
 	}
 }

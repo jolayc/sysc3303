@@ -190,11 +190,11 @@ public class client {
 		printSend(sendPacket);
 		try {
 			 socket.send(packet);
-		 }
-		 catch(IOException io){
+		}
+		catch(IOException io){
 			 io.printStackTrace();
 			 System.exit(1);
-		 }
+		}
 	}
 	
 	/**
@@ -211,9 +211,10 @@ public class client {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		printReceive(packet);
+		printReceive(packet);	
 		return packet;
 	}
+
 	
 	/**
 	 * Creates read request packet

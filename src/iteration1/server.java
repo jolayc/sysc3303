@@ -24,6 +24,10 @@ public class server implements Runnable {
 	
 	private int port = 69;
 	
+	private String rq;
+	
+	private int blockNumber;
+	
 	//private boolean running;
 	
 	public server() {
@@ -31,6 +35,8 @@ public class server implements Runnable {
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
+			blockNumber = 0;
+			rq = "NONE";
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -39,15 +45,26 @@ public class server implements Runnable {
 	
 	public void run() {
 		while (!receiveSocket.isClosed()) {
-			byte[] data = new byte[20];
+			byte[] data = new byte[4 + 512];
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
-			System.out.println("here");
 			// Check request
-			String rq = checkReadWrite(receivePacket.getData());
-			// Create a thread to process request
-			new Thread(new serverThread(receivePacket, rq));
+			if(rq.equals("NONE")){
+				rq = checkReadWrite(receivePacket.getData());
+				if(rq.equals("READ")){
+					blockNumber++;
+				}
+				// Create a thread to process request
+				new Thread(new serverThread(receivePacket, rq, blockNumber));
+			}
+			else if(rq.equals("READ")){
+				blockNumber = (byte)(blockNumber + 1);
+				new Thread(new serverThread(receivePacket, rq, blockNumber));
+			}
+			else if(rq.equals("WRITE")){
+				new Thread(new serverThread(receivePacket, rq, blockNumber));
+			}
 		}
 		shutdown();
 	}
@@ -58,12 +75,11 @@ public class server implements Runnable {
 	 * @return READ if read request, WRITE if write request
 	 */
 	private String checkReadWrite(byte[] data) {
-		String rq;
+	
 		if(data[1] == one) rq = "READ";
 		else rq = "WRITE";
 		return rq;
 	}
-	
 	
 	
 	/**
@@ -102,16 +118,16 @@ public class server implements Runnable {
 	 * @param dp DatagramPacket being sent
 	 */
 	private void receivePack(DatagramSocket sock, DatagramPacket dp) {
-		System.out.println("now");
 		try {
 			sock.receive(dp);
-			System.out.print("at");
+			printReceive(dp);
 		} catch (SocketException se) {
 			System.out.println("Socket is closed");
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		
 	}
 	
 	// Print information relating to send request 

@@ -18,22 +18,26 @@ public class serverThread extends Thread implements Runnable {
 	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	
+	private int blockNumber;
+	
 	// String identifiers
 	private String message;
 	private String read = "READ";
 	private String write = "WRITE";
 	
-	public serverThread(DatagramPacket receivePacket, String message) {
+	
+	public serverThread(DatagramPacket receivePacket, String message, int blockNumber) {
 		this.message = message;
 		this.receivePacket = receivePacket;
+		this.blockNumber = blockNumber;
 	}
 	
 	public void run() {
-		byte response[] = new byte[4];
+		byte response[] = new byte[512+4];
 		
 		// create response packet
 		// send data packet when receiving a read request
-		if (message.equals(read)) response = createDataPacket();
+		if (message.equals(read)) response = createDataPacket(receivePacket);
 		
 		// send a acknowledge packet when receiving a write request or data packet
 		else if(message.equals(write)) response = createACKPacket();
@@ -74,8 +78,18 @@ public class serverThread extends Thread implements Runnable {
 	 * Create a data packet containing {0,3,0,1}
 	 * @return byte[4] data packet
 	 */
-	public byte[] createDataPacket() {
-		return new byte[] {0,3,0,1};
+	public byte[] createDataPacket(DatagramPacket packet) {
+		byte[] data = new byte[512 + 4];
+		data[0] = 0;
+		data[1] = 3;
+		data[2] = (byte)(blockNumber>>4);
+		data[3] = (byte)(blockNumber & 0x0F);
+		
+		for(int i = 0; i < 512; i++){
+			data[4+i] = packet.getData()[i];
+		}
+		
+		return data;
 	}
 	
 	/**
@@ -83,7 +97,13 @@ public class serverThread extends Thread implements Runnable {
 	 * @return byte[4] acknowledge packet
 	 */
 	public byte[] createACKPacket() {
-		return new byte[] {0,4};
+		byte[] data = new byte[4];
+		data[0] = 0;
+		data[1] = 4;
+		data[2] = (byte)(blockNumber>>4);
+		data[3] = (byte)(blockNumber & 0x0F);
+		
+		return data;
 	}
 	
 	// Print information relating to send request 

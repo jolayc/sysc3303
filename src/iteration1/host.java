@@ -40,10 +40,10 @@ public class host {
 		while(true){
 			
 			//buffer for the receive packet
-			byte receiveData[] = new byte[20];
+			byte receiveData[] = new byte[4 + 512];
 			
 			//buffer for the response packet to be sent to the intermediatehost
-			byte sendData[] = new byte[4];
+			byte sendData[] = new byte[4 + 512];
 		    
 			//constructs a datagram packet to receive packets 20 bytes long
 			receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -106,7 +106,7 @@ public class host {
 	 */
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
-		System.out.println("IntermediateHost: Waiting for Packet.\n");
+		System.out.println("Host: Waiting for Packet.\n");
 		try {        
 	         socket.receive(packet);
 	    } catch (IOException e) {
@@ -122,7 +122,7 @@ public class host {
 	 * @param packet, DatagramPacket that is used in the send request
 	 */
 	private void printSend(DatagramPacket packet){
-		System.out.println("IntermediateHost: Sending packet");
+		System.out.println("Host: Sending packet");
 	    System.out.println("To host: " + packet.getAddress());
 	    System.out.println("Destination host port: " + packet.getPort());
 	    printStatus(packet);
@@ -133,7 +133,7 @@ public class host {
 	 * @param packet, DatagramPacket that is used in the receive request
 	 */
 	private void printReceive(DatagramPacket packet){
-		System.out.println("IntermediateHost: Packet received");
+		System.out.println("Host: Packet received");
 	    System.out.println("From host: " + packet.getAddress());
 	    System.out.println("Host port: " + packet.getPort());
 	    printStatus(packet);

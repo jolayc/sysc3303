@@ -3,6 +3,7 @@ package iteration1;
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+import java.util.Scanner;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,21 +32,13 @@ public class client {
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
-	public client(String filename, String mode){
-		
+	public client(){
+		// String filename, String mode
 		try {
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
 			byte[] data = new byte[4];
 		    receivePacket = new DatagramPacket(data, data.length);
-		    
-		    if(filename.equals(null)) this.filename = "";
-		    else this.filename = filename;
-		    
-		    if(mode.equals(null)) this.mode = "";
-		    else this.mode = mode;
-		    
-		    blockNum = 0;
 		}
 		catch (SocketException se){
 			se.printStackTrace();
@@ -53,22 +46,27 @@ public class client {
 		}
 	}
 	
-	public void sendRead(){
-		sendPacket = createRRQPacket();
-		sendPack(sendReceiveSocket, sendPacket);
-		receivePacket = receivePack(sendReceiveSocket, sendPacket);
+	/**
+	 * Sends a read request to the server, waits for a DATA packet
+	 * and responds with an ACK
+	 * @param filename
+	 */
+	public void sendRead(String filename){
+		// create and send request
+		DatagramPacket readRequest = createRRQPacket(filename);
+		printSend(readRequest);
+		try {
+			sendReceiveSocket.send(readRequest);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		// wait for a response from server
 		
 	}
 	
-	public void sendWrite(){
-		sendPacket = createWRQPacket();
-		sendPack(sendReceiveSocket, sendPacket);
-		receivePacket = receivePack(sendReceiveSocket, sendPacket);
-		if(checkACK(receivePacket.getData())) {
-			sendFile();
-		} else {
-			
-		}
+	public void sendWrite(String filename){
+
 	}
 	
 	public boolean checkACK(byte[] b) {
@@ -82,9 +80,8 @@ public class client {
 	 * @param packet, DatagramPacket that will be sent
 	 */
 	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
-		
 		printSend(sendPacket);
-		try{
+		try {
 			 socket.send(packet);
 		 }
 		 catch(IOException io){
@@ -99,7 +96,6 @@ public class client {
 	 * @param packet, DatagramPacket where the data from the socket will be stored
 	 */
 	public DatagramPacket receivePack(DatagramSocket socket, DatagramPacket packet) {
-		
 		System.out.println("Client: Waiting for Packet.\n");
 		try {        
 	         System.out.println("Waiting...");
@@ -116,13 +112,14 @@ public class client {
 	 * Creates read request packet
 	 * @return DatagramPacket containing read request
 	 */
-	public DatagramPacket createRRQPacket(){
+	public DatagramPacket createRRQPacket(String filename){
 		
+		// |Opcode (2 bytes)|
 		byte[] rrq = new byte[100];
 		rrq[0] = zero;
 		rrq[1] = one;
-		
-		finishRRQOrWRQ(rrq);
+		// |Filename|0|Mode|0|
+		finishRRQOrWRQ(rrq, filename, "netascii");
 		
 		return createSendPacket(rrq);
 	}
@@ -131,13 +128,13 @@ public class client {
 	 * Creates write request packet
 	 * @return DatagramPacket containing read request
 	 */
-	public DatagramPacket createWRQPacket(){
+	public DatagramPacket createWRQPacket(String filename){
 		
 		byte[] wrq = new byte[20];
 		wrq[0] = one;
 		wrq[1] = zero;
 		
-		finishRRQOrWRQ(wrq);
+		finishRRQOrWRQ(wrq, filename, "netascii");
 		
 		return createSendPacket(wrq);
 	}
@@ -146,7 +143,7 @@ public class client {
 	 * Finishes the request packet for both read and write
 	 * @param rq, byte[] with start of request
 	 */
-	private void finishRRQOrWRQ(byte[] rq){
+	private void finishRRQOrWRQ(byte[] rq, String filename, String mode){
 		
 		int offset = 0;
 		
@@ -243,20 +240,41 @@ public class client {
 		return fb;
 	}
 	
-	private void sendFile() {
-		byte[] data = toBytes(); // the data being sent as a byte array 
-		int blockNum = (data.length / 512) + 1; // number of blocks being sent
-		// byte[] pack = new byte[4 + data.length]; // the DATA packet [OPCODE (2), BLOCK # (2), DATA (n)]
-		while () {
-			
-		}
+	private void shutdown() {
+		sendReceiveSocket.close();
+		System.exit(1);
 	}
 	
-	
 	public static void main(String args[]){
-		client c1 = new client("test1.txt", "netascii");
-		client c2 = new client("test2.txt", "octet");
-		c1.sendRead();
-		c2.sendWrite();
+		client c = new client();
+		Scanner sc =  new Scanner(System.in);
+		
+		while (true) {
+			System.out.println("Client: Enter file name or 'exit' to terminate.");
+			String in = sc.nextLine().toLowerCase();
+			if (in.equals("exit")) break;
+			System.out.println("Client: Enter 'r' for read request or 'w' for write request");
+			String command = sc.nextLine().toLowerCase();
+//			try {
+//				if (command.equals("r")) {
+//					c.sendRead(in);
+//				} else if (command.equals("w")) {
+//					c.sendWrite(in);
+//				} else {
+//					System.out.println("Command not recognized.");
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+			if (command.equals("r")) {
+				c.sendRead(in);
+			} else if (command.equals("w")) {
+				c.sendWrite(in);
+			} else {
+				System.out.println("Command not recognized.");
+			}
+		}
+		sc.close();
+		c.shutdown();
 	}
 }

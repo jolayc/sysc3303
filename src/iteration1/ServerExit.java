@@ -9,8 +9,7 @@ import java.util.Scanner;
 public class ServerExit extends Thread {
 	private server s;
 	
-	public ServerExit(String name, server s) {
-		super(name);
+	public ServerExit(server s) {
 		this.s = s;
 	}
 	

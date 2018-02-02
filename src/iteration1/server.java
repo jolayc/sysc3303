@@ -38,17 +38,23 @@ public class server {
 	}
 	
 	private void sendAndReceive() {
-		ServerExit exitListener = new ServerExit("Exit handler", this);
-		exitListener.start();
 		while(running) {
 			byte[] data = new byte[20];
-			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
-			receivePack(receiveSocket, receivePacket);
+			
+			//receivePack(receiveSocket, receivePacket);
+			// Wait on port 69
+
+			try {
+				receiveSocket.receive(receivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 			// Check request
 			String rq = checkReadWrite(receivePacket.getData());
 			// Create a thread to process request
-			new Thread(new serverThread(receivePacket, rq));
+			new Thread(new serverThread(receivePacket, rq)).start();
 		}
 		shutdown();
 	}
@@ -79,8 +85,8 @@ public class server {
 	 * for receiving
 	 */
 	private void shutdown() {
-		receiveSocket.close();
 		System.out.println("Server: Requests are no longer being taken.");
+		receiveSocket.close();
 		while (true) {} // allows for file transfers in progress to finish but refuse to create new connections
 	}
 		
@@ -140,6 +146,8 @@ public class server {
 	
 	public static void main(String[] args) {
 		server s = new server();
+		Thread exit = new Thread(new ServerExit(s));
+		exit.start();
 		s.sendAndReceive();
 	}
 }

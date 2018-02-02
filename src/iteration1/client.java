@@ -136,10 +136,6 @@ public class client {
 		return pack;
 	}
 	
-	private void printFromServer(byte[] data) {
-		
-	}
-	
 	/**
 	 * Returns the block number as an integer
 	 * @param data byte[] containing opcode, block num (2 bytes) and data
@@ -197,13 +193,13 @@ public class client {
 	 * @return DatagramPacket containing read request
 	 */
 	public DatagramPacket createRRQPacket(String filename){
-		
+		String mode = "netascii";
 		// |Opcode (2 bytes)|
-		byte[] rrq = new byte[100];
+		byte[] rrq = new byte[4 + filename.length() + mode.length()];
 		rrq[0] = zero;
 		rrq[1] = one;
 		// |Filename|0|Mode|0|
-		finishRRQOrWRQ(rrq, filename, "netascii");
+		finishRRQOrWRQ(rrq, filename, mode);
 		
 		return createSendPacket(rrq);
 	}
@@ -236,16 +232,15 @@ public class client {
 		byte[] modebyte = mode.getBytes();	
 		
 		for(int ch = 0; ch < filebyte.length; ch++){
-	    	rq[2+ch] = filebyte[ch];
-	    	offset = 3 + ch;
+	    	rq[2 + ch] = filebyte[ch];
 	    }
-		rq[offset] = zero;
+		
+		rq[3 + filebyte.length] = zero;
 		
 		for(int ch = 0; ch < modebyte.length; ch++){
-	    	rq[offset + ch] = modebyte[ch];
-	    	if (ch == modebyte.length - 1) offset = offset + ch;
+			rq[3 + filebyte.length + ch] = modebyte[ch];
 	    }
-		rq[offset] = zero;
+		rq[3 + filebyte.length + modebyte.length] = zero;
 	}
 	
 	/**
@@ -340,17 +335,6 @@ public class client {
 			if (in.equals("exit")) break;
 			System.out.println("Client: Enter 'r' for read request or 'w' for write request");
 			String command = sc.nextLine().toLowerCase();
-//			try {
-//				if (command.equals("r")) {
-//					c.sendRead(in);
-//				} else if (command.equals("w")) {
-//					c.sendWrite(in);
-//				} else {
-//					System.out.println("Command not recognized.");
-//				}
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
 			if (command.equals("r")) {
 				c.sendRead(in);
 			} else if (command.equals("w")) {

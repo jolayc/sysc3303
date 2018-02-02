@@ -237,7 +237,8 @@ public class client {
 	 */
 	public DatagramPacket createWRQPacket(String filename){
 		String mode = "netascii";
-		byte[] wrq = new byte[20];
+		// |Opcode (2 bytes)|
+		byte[] wrq = new byte[4 + filename.length() + mode.length()];
 		wrq[0] = one;
 		wrq[1] = zero;
 		

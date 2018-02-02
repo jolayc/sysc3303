@@ -13,7 +13,7 @@ import java.util.Scanner;
  * The response is created by a server thread created by the server
  * (multithreading)
  */
-public class server {
+public class server implements Runnable {
 	
 	private DatagramSocket sendSocket, receiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -24,10 +24,10 @@ public class server {
 	
 	private int port = 69;
 	
-	private boolean running;
+	//private boolean running;
 	
 	public server() {
-		running = true;
+		//running = true;
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
@@ -37,24 +37,17 @@ public class server {
 		}
 	}
 	
-	private void sendAndReceive() {
-		while(running) {
+	public void run() {
+		while (!receiveSocket.isClosed()) {
 			byte[] data = new byte[20];
-			receivePacket = new DatagramPacket(data, data.length);
-			
-			//receivePack(receiveSocket, receivePacket);
 			// Wait on port 69
-
-			try {
-				receiveSocket.receive(receivePacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
+			receivePacket = new DatagramPacket(data, data.length);
+			receivePack(receiveSocket, receivePacket);
+			System.out.println("here");
 			// Check request
 			String rq = checkReadWrite(receivePacket.getData());
 			// Create a thread to process request
-			new Thread(new serverThread(receivePacket, rq)).start();
+			new Thread(new serverThread(receivePacket, rq));
 		}
 		shutdown();
 	}
@@ -71,22 +64,25 @@ public class server {
 		return rq;
 	}
 	
+	
+	
 	/**
 	 * Stops the continuous running loop
 	 * of the server by setting the running flag 
 	 * to false
 	 */
-	public void stop() {
-		running = false;
+	private synchronized void stop() {
+		//running = false;
+		receiveSocket.close();
 	}
 	
 	/**
 	 * Shuts down the server by closing the socket used
 	 * for receiving
 	 */
-	private void shutdown() {
-		System.out.println("Server: Requests are no longer being taken.");
+	private synchronized void shutdown() {
 		receiveSocket.close();
+		System.out.println("Server: Requests are no longer being taken.");
 		while (true) {} // allows for file transfers in progress to finish but refuse to create new connections
 	}
 		
@@ -106,8 +102,12 @@ public class server {
 	 * @param dp DatagramPacket being sent
 	 */
 	private void receivePack(DatagramSocket sock, DatagramPacket dp) {
+		System.out.println("now");
 		try {
 			sock.receive(dp);
+			System.out.print("at");
+		} catch (SocketException se) {
+			System.out.println("Socket is closed");
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -146,8 +146,18 @@ public class server {
 	
 	public static void main(String[] args) {
 		server s = new server();
-		Thread exit = new Thread(new ServerExit(s));
-		exit.start();
-		s.sendAndReceive();
+		new Thread(s).start();
+		System.out.println("Server: To exit, enter 'exit'");
+		Scanner sc = new Scanner(System.in);
+		for(;;) {
+			if (sc.hasNextLine()) {
+				String msg = sc.nextLine().toLowerCase();
+				if (msg.equals("exit")) {
+					sc.close();
+					s.stop();
+					break;
+				}
+			}
+		}
 	}
 }

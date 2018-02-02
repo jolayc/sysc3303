@@ -23,6 +23,7 @@ public class client {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
+	private final byte four = 0x04;
 	
 	private String filename;
 	private String mode;
@@ -52,6 +53,10 @@ public class client {
 	 * @param filename
 	 */
 	public void sendRead(String filename){
+		System.out.println("Requesting to read from server with filename: " + filename);
+		byte[] incomingData;
+		int curBlockNum = 1;
+		
 		// create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
 		printSend(readRequest);
@@ -62,6 +67,51 @@ public class client {
 			System.exit(1);
 		}
 		// wait for a response from server
+		while (true) {
+			// Server responds to a Read Request with a DATA packet
+			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
+			receivePacket = new DatagramPacket(incomingData, incomingData.length);
+			
+			// receive packet from server
+			try {
+				sendReceiveSocket.receive(receivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			// check block number received
+			int dataBlockNum = getBlockNum(receivePacket.getData());
+			
+			// compare block
+		}
+	}
+	
+	/**
+	 * Create ACK packet to be sent to server during a read request
+	 * @param block
+	 * @return ACK packet {0, 4, block number, block number}
+	 */
+	private byte[] createACKPacket(int block) {
+		byte[] pack = new byte[4];
+		pack[0] = zero;
+		pack[1] = four;
+		byte[] blockNum = toBlockNum();
+		pack[2] = ;
+		pack[3] = ;
+		
+		return pack;
+	}
+	
+	/**
+	 * Returns the block number as an integer
+	 * @param data byte[] containing opcode, block num (2 bytes) and data
+	 * @return
+	 */
+	private int getBlockNum(byte[] data) {
+		return ((data[2] & 0xff) << 8) | (data[3] & 0xff);
+	}
+	
+	private byte[] toBlockNum() {
 		
 	}
 	
@@ -242,6 +292,7 @@ public class client {
 	
 	private void shutdown() {
 		sendReceiveSocket.close();
+		System.out.println("Client: Terminated.");
 		System.exit(1);
 	}
 	

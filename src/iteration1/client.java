@@ -55,8 +55,8 @@ public class client {
 	 */
 	public void sendWrite(String filename) {
 		System.out.println("Client: Requested to write to server with filename: " + filename);
-		byte[] serverResponse;
-		byte[] fileAsBytes;
+		byte[] serverResponse, fileAsBytes, serverACK;
+		int curBlockNum;
 		Scanner sc = new Scanner(System.in);
 		
 		// Create and send request
@@ -69,12 +69,27 @@ public class client {
 			System.exit(1);
 		}
 		
-		// Ask user to type in path of file to be converted into bytes and return into a byte[]
+		// Prompt user to provide path of file and convert to byte[]
 		fileAsBytes = toBytes();
 		
 		//Process response from Server
 		while(true) {
+			// Server responds to Write request with an ACK
+			serverACK = new byte[4];
+			receivePacket = new DatagramPacket(serverACK, serverACK.length);
 			
+			// Receive ACK packet from Server
+			try {
+				sendReceiveSocket.receive(receivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			// Send a DATA Block to write
+			
+			// Wait for an ACK from Server
+			
+			// Check if ACK contains correct block number
 		}
 	}
 	

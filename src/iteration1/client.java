@@ -55,9 +55,10 @@ public class client {
 	public void sendRead(String filename){
 		System.out.println("Requesting to read from server with filename: " + filename);
 		byte[] incomingData;
+		byte[] ack;
 		int curBlockNum = 1;
 		
-		// create and send request
+		// Create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
 		printSend(readRequest);
 		try {
@@ -66,57 +67,90 @@ public class client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		// wait for a response from server
+		
+		// Process response from Server
 		while (true) {
-			// Server responds to a Read Request with a DATA packet
+			// Server responds to a Read Request with a DATA packet (save to receivePacket)
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
 			
-			// receive packet from server
+			// Receive packet from server
 			try {
 				sendReceiveSocket.receive(receivePacket);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			// check block number received
+			// Check block number received
 			int dataBlockNum = getBlockNum(receivePacket.getData());
 			
-			// compare block
+			// Compare block
+			if (curBlockNum != dataBlockNum) {
+				System.out.println("Unmatching block numbers, exiting.");
+				System.exit(1);
+			}
+			
+			// Print contents
+			System.out.println("Client: Received DATA block from server: ");
+			printStatus(receivePacket);
+			
+			// Create and send ACK
+			ack = createACKPacket(curBlockNum);
+			sendPacket = new DatagramPacket(ack, ack.length);
+			try {
+				sendReceiveSocket.send(sendPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			// check if end of read
+			if(incomingData.length < 512) {
+				System.out.println("Client: Read complete, blocks received: " + curBlockNum);
+				break;
+			}
+			
+			// increment current block number
+			curBlockNum++;
 		}
 	}
 	
 	/**
 	 * Create ACK packet to be sent to server during a read request
 	 * @param block
-	 * @return ACK packet {0, 4, block number, block number}
+	 * @return ACK packet {0, 4, block number(hi), block number(lo)}
 	 */
 	private byte[] createACKPacket(int block) {
 		byte[] pack = new byte[4];
+		byte[] num = new byte[2];
+		// {0, 4} op code
 		pack[0] = zero;
 		pack[1] = four;
-		byte[] blockNum = toBlockNum();
-		pack[2] = ;
-		pack[3] = ;
-		
+		// convert block number to bytes
+		num[0] = (byte)(block & 0xFF);
+		num[1] = (byte)((block >> 8) & 0xFF);
+		// load block number into ack packet
+		pack[2] = num[0];
+		pack[3] = num[1];
+				
 		return pack;
+	}
+	
+	private void printFromServer(byte[] data) {
+		
 	}
 	
 	/**
 	 * Returns the block number as an integer
 	 * @param data byte[] containing opcode, block num (2 bytes) and data
-	 * @return
+	 * @return int Block number
 	 */
 	private int getBlockNum(byte[] data) {
 		return ((data[2] & 0xff) << 8) | (data[3] & 0xff);
 	}
 	
-	private byte[] toBlockNum() {
-		
-	}
-	
 	public void sendWrite(String filename){
-
+		
 	}
 	
 	public boolean checkACK(byte[] b) {

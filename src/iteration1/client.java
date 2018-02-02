@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,12 +49,42 @@ public class client {
 	}
 	
 	/**
+	 * Sends a write request to the server, waits for the ACK packet
+	 * and sends DATA packets until complete
+	 * @param filename Name of requested file to be written to server
+	 */
+	public void sendWrite(String filename) {
+		System.out.println("Client: Requested to write to server with filename: " + filename);
+		byte[] serverResponse;
+		byte[] fileAsBytes;
+		Scanner sc = new Scanner(System.in);
+		
+		// Create and send request
+		DatagramPacket writeRequest = createWRQPacket(filename);
+		printSend(writeRequest);
+		try {
+			sendReceiveSocket.send(writeRequest);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		// Ask user to type in path of file to be converted into bytes and return into a byte[]
+		fileAsBytes = toBytes();
+		
+		//Process response from Server
+		while(true) {
+			
+		}
+	}
+	
+	/**
 	 * Sends a read request to the server, waits for a DATA packet
 	 * and responds with an ACK
-	 * @param filename
+	 * @param filename Name of requested file to be read from server
 	 */
 	public void sendRead(String filename){
-		System.out.println("Requesting to read from server with filename: " + filename);
+		System.out.println("Client: Requesting to read from server with filename: " + filename);
 		byte[] incomingData;
 		byte[] ack;
 		int curBlockNum = 1;
@@ -145,10 +176,6 @@ public class client {
 		return ((data[2] & 0xff) << 8) | (data[3] & 0xff);
 	}
 	
-	public void sendWrite(String filename){
-		
-	}
-	
 	public boolean checkACK(byte[] b) {
 		byte[] tmp = new byte[] {0,4};
 		return Arrays.equals(tmp, b);
@@ -209,12 +236,12 @@ public class client {
 	 * @return DatagramPacket containing read request
 	 */
 	public DatagramPacket createWRQPacket(String filename){
-		
+		String mode = "netascii";
 		byte[] wrq = new byte[20];
 		wrq[0] = one;
 		wrq[1] = zero;
 		
-		finishRRQOrWRQ(wrq, filename, "netascii");
+		finishRRQOrWRQ(wrq, filename, mode);
 		
 		return createSendPacket(wrq);
 	}
@@ -224,9 +251,6 @@ public class client {
 	 * @param rq, byte[] with start of request
 	 */
 	private void finishRRQOrWRQ(byte[] rq, String filename, String mode){
-		
-		int offset = 0;
-		
 		//contains the bytes of the global strings
 	    byte[] filebyte = filename.getBytes();
 		byte[] modebyte = mode.getBytes();	
@@ -307,16 +331,31 @@ public class client {
 		System.out.println(received);
 	}
 	
+	/**
+	 * Converts a file found at user specified path and converts
+	 * into a byte[]
+	 * @return File as byte[]
+	 */
 	private byte[] toBytes() {
-		Path path = Paths.get("C:\\Users\\karlschnalzer\\Desktop"); /* CHANGE THIS TO PATH ON LAB MACHINE */
-		byte[] fb = null;
+		byte[] bytes = null;
+		Scanner sc = new Scanner(System.in);
+		System.out.println("Client: Enter path where file (requested to written) is located: ");
+		String in = sc.nextLine(); // save path input from user
+		Path path = Paths.get(in);
+		// Try to convert File into byte[]
 		try {
-			fb = Files.readAllBytes(path);
+			bytes = Files.readAllBytes(path);
+		} catch (FileNotFoundException fe) {
+			// File not found
+			fe.printStackTrace();
+			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		return fb;
+		sc.close();
+		// return file as bytes
+		return bytes;
 	}
 	
 	private void shutdown() {

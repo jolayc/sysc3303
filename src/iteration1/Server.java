@@ -17,14 +17,13 @@ import java.util.Scanner;
  * The response is created by a server thread created by the server
  * (multithreading)
  */
-public class server implements Runnable {
+public class Server implements Runnable {
 	
-	private DatagramSocket sendSocket, receiveSocket;
-	private DatagramPacket sendPacket, receivePacket;
+	private DatagramSocket receiveSocket;
+	private DatagramPacket receivePacket;
 	
-	private final byte zero = 0;
 	private final byte one = 1;
-	private final byte two = 2;
+
 	private byte[] path;
 	
 	private int port = 69;
@@ -36,7 +35,9 @@ public class server implements Runnable {
 	
 	private int[] blockNumber;
 	
-	
+	/**
+	 * Constructor for server
+	 */
 	public server() {
 		try {
 			// Construct a socket to receive bounded to port 69
@@ -49,6 +50,9 @@ public class server implements Runnable {
 		}
 	}
 	
+	/**
+	 * Runs the server
+	 */
 	public void run() {
 		while (!receiveSocket.isClosed()) {
 			byte[] data = new byte[4 + 512];
@@ -66,15 +70,15 @@ public class server implements Runnable {
 					blockNumber[1] = 1;
 				}
 				// Create a thread to process request
-				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
 			}
 			else if(rq.equals(read)){
 				calcBlockNumber();
-				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
 			}
 			else if(rq.equals(write)){
 				calcBlockNumber();
-				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
 			}
 		}
 		shutdown();
@@ -92,11 +96,11 @@ public class server implements Runnable {
 		return rq;
 	}
 	
-	private synchronized void stop() {
-		 // this method needs to be improved ***
+	// this method needs to be improved ***
+	//private synchronized void stop() {
 		 //running = false;
-		 receiveSocket.close();		
-	}
+		// receiveSocket.close();		
+	//}
 	
 	/**
 	 * Shuts down the server by closing the socket used
@@ -108,6 +112,11 @@ public class server implements Runnable {
 		while (true) {} // allows for file transfers in progress to finish but refuse to create new connections
 	}
 	
+	/**
+	 * 
+	 * @param packet
+	 * @return
+	 */
 	private String getPath(DatagramPacket packet){
 		byte[] data = packet.getData();
 		byte[] filename = new byte[data.length];
@@ -203,6 +212,8 @@ public class server implements Runnable {
 		new Thread(s).start();
 		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);
+		
+		//Check forn exit command
 		for(;;) {
 			if (sc.hasNextLine()) {
 				String msg = sc.nextLine().toLowerCase();

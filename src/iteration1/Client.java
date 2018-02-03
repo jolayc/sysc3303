@@ -4,30 +4,23 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Client
- * Client side of a simple echo server.
+ * Client of server/client TFTP application
  * The client sends a request packet to the intermediate host
- * It then receives a reply packet from the intermediate host.
- * @author: Jack MacDougall
- * @date: January 18, 2018
+ * It then receives either a data or ack packet from the intermediate host depending of the request type.
  */
 
 
-public class client {
+public class Client {
 	
 	private final byte zero = 0x00;
 	private final byte one = 0x01;
 	private final byte four = 0x04;
-	
-	private String filename;
-	private String mode;
 	
 	private int[] blockNum;
 	
@@ -242,6 +235,12 @@ public class client {
 		return pack;
 	}
 	
+	/**
+	 * Checks if byte[] is an ack packet
+	 * @param b, byte[] to be checked
+	 * @return true if b is an ack packet
+	 * @return false if b is not an an ack packet
+	 */
 	public boolean checkACK(byte[] b) {
 		byte[] tmp = new byte[] {0,4};
 		return Arrays.equals(tmp, b);
@@ -360,8 +359,13 @@ public class client {
 		return new DatagramPacket(block, block.length);
 	}
 	
+	/**
+	 * Calculates the current block number
+	 * @return int[] which is the current block number
+	 */
 	private int[] calcBlockNumber(){
 
+		//if block number needs another ten value
 		if(blockNum[1] == 9) {
 			blockNum[0]++;
 			blockNum[1] = 0;

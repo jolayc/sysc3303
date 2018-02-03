@@ -1,19 +1,14 @@
 package iteration1;
 import java.net.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Scanner;
 
 
 /**
  * A server thread that will handle read/write requests received by server, sent by client 
  */
 
-public class serverThread extends Thread implements Runnable {
+public class ServerThread extends Thread implements Runnable {
 	
 	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;

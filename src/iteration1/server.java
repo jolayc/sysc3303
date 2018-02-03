@@ -28,7 +28,7 @@ public class server implements Runnable {
 	private byte[] path;
 	
 	private int port = 69;
-	private int offset;
+	//private int offset;
 	
 	private String rq;
 	private String read = "READ";

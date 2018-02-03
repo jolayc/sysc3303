@@ -37,7 +37,6 @@ public class client {
 	private DatagramPacket sendPacket, receivePacket;
 	
 	public client(){
-		// String filename, String mode
 		try {
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
@@ -59,11 +58,11 @@ public class client {
 		System.out.println("Client: Requested to write to server with filename: " + filename);
 		byte[] serverACK;
 		Scanner sc = new Scanner(System.in);
-		
+
 		blockNum = new int[2];
 		blockNum[0] = 0;
 		blockNum[1] = 0;;
-		
+
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		printSend(writeRequest);
@@ -73,16 +72,16 @@ public class client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		// Prompt user to provide path of file and convert to byte[]
 		fileAsBytes = toBytes();
-		
+
 		//Process response from Server
 		while(true) {
 			// Server responds to Write request with an ACK
 			serverACK = new byte[4];
 			receivePacket = new DatagramPacket(serverACK, serverACK.length);
-			
+
 			// Receive ACK packet from Server
 			try {
 				sendReceiveSocket.receive(receivePacket);
@@ -91,10 +90,10 @@ public class client {
 				System.exit(1);
 			}
 			calcBlockNumber();
-			
+
 			// Send a DATA Block to write
 			byte[] dataBlock = createDataPacket();
-			
+
 			// Wait for an ACK from Server
 			try {
 				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
@@ -112,13 +111,14 @@ public class client {
 			int len = 0;
 			for(byte b: dataBlock){
 				if(b == 0 && len > 4) break;
-					len++;
-				}		
-				if(len < 512) {
-					System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
-					break;
-				}
+				len++;
+			}		
+			if(len < 512) {
+				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+				break;
+			}
 		}
+		sc.close();
 	}
 	
 	/**

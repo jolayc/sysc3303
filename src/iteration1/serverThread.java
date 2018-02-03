@@ -27,7 +27,6 @@ public class serverThread extends Thread implements Runnable {
 	
 	private byte[] path;
 	
-	
 	public serverThread(DatagramPacket receivePacket, byte[] path, String message, int[] blockNumber) {
 		this.message = message;
 		this.receivePacket = receivePacket;

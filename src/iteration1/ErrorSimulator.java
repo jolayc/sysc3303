@@ -18,7 +18,7 @@ public class ErrorSimulator {
 	/**
 	 * Constructor for host
 	 */
-	public host(){
+	public ErrorSimulator(){
 		try {
 			//Constructs a socket to receive packets bounded to port 23
 			receiveSocket = new DatagramSocket(23);
@@ -167,8 +167,8 @@ public class ErrorSimulator {
 	}
 	
 	public static void main(String args[]){
-		host h = new host();
-		h.receiveAndSend();
+		ErrorSimulator sim = new ErrorSimulator();
+		sim.receiveAndSend();
 	}
 
 }

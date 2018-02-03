@@ -38,7 +38,7 @@ public class Server implements Runnable {
 	/**
 	 * Constructor for server
 	 */
-	public server() {
+	public Server() {
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
@@ -208,12 +208,12 @@ public class Server implements Runnable {
 	}
 	
 	public static void main(String[] args) {
-		server s = new server();
+		Server s = new Server();
 		new Thread(s).start();
 		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);
 		
-		//Check forn exit command
+		//Check for exit command
 		for(;;) {
 			if (sc.hasNextLine()) {
 				String msg = sc.nextLine().toLowerCase();

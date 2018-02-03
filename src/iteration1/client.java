@@ -35,6 +35,7 @@ public class client {
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
+
 	
 	public client(){
 		try {
@@ -57,7 +58,6 @@ public class client {
 	public void sendWrite(String filename) {
 		System.out.println("Client: Requested to write to server with filename: " + filename);
 		byte[] serverACK;
-		Scanner sc = new Scanner(System.in);
 
 		blockNum = new int[2];
 		blockNum[0] = 0;
@@ -118,7 +118,6 @@ public class client {
 				break;
 			}
 		}
-		sc.close();
 	}
 	
 	/**
@@ -371,10 +370,6 @@ public class client {
 			blockNum[1]++;
 		}
 		
-		if(blockNum[0] > 9){
-			blockNum[0] = 0;
-			blockNum[1] = 1;
-		}
 		return blockNum;
 	}
 
@@ -424,9 +419,9 @@ public class client {
 	 */
 	private byte[] toBytes() {
 		byte[] bytes = null;
-		Scanner sc = new Scanner(System.in);
+		Scanner s = new Scanner(System.in);
 		System.out.println("Client: Enter path where file (requested to written) is located: ");
-		String in = sc.nextLine(); // save path input from user
+		String in = s.nextLine(); // save path input from user
 		Path path = Paths.get(in);
 		// Try to convert File into byte[]
 		try {
@@ -439,7 +434,7 @@ public class client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		sc.close();
+		//sc.close();
 		// return file as bytes
 		return bytes;
 	}

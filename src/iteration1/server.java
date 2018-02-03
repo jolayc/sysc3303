@@ -155,11 +155,7 @@ public class server implements Runnable {
 		else{
 			blockNumber[1]++;
 		}
-		
-		if(blockNumber[0] > 9){
-			blockNumber[0] = 0;
-			blockNumber[1] = 1;
-		}
+
 		return blockNumber;
 	}
 	

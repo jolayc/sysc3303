@@ -98,8 +98,10 @@ public class server implements Runnable {
 	 * to false
 	 */
 	private synchronized void stop() {
+		// this method needs to be improved ***
 		//running = false;
 		receiveSocket.close();
+		
 	}
 	
 	/**

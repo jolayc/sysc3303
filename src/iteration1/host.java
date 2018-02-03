@@ -38,7 +38,7 @@ public class host {
 	
 		//will repeat "forever"
 		while(true){
-			
+			boolean stop = false;
 			//buffer for the receive packet
 			byte receiveData[] = new byte[4 + 512];
 			
@@ -51,6 +51,10 @@ public class host {
 		    //waits until receiveSocket receives a datagram packet from the client
 		    receivePack(receiveSocket, receivePacket);
 		    
+		    if(receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0){
+		    	stop = true;
+		    }
+		    
 		    //waits until receiveSocket receives a datagram packet from the client
 		    try {
 				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), 69);
@@ -62,6 +66,8 @@ public class host {
 		    //sends the sendReceivePacket to the intermediate host
 		    sendPack(sendReceiveSocket, sendReceivePacket);
 		    printSend(sendReceivePacket);
+		    
+		    if(stop) break;
 		    
 		    //creates a datagram packet that will contain sendData that will be ported to port 69
 		    try {

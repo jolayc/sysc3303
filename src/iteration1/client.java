@@ -31,6 +31,8 @@ public class client {
 	
 	private int[] blockNum;
 	
+	private byte[] fileAsBytes;
+	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
@@ -55,9 +57,12 @@ public class client {
 	 */
 	public void sendWrite(String filename) {
 		System.out.println("Client: Requested to write to server with filename: " + filename);
-		byte[] serverResponse, fileAsBytes, serverACK;
-		int curBlockNum;
+		byte[] serverACK;
 		Scanner sc = new Scanner(System.in);
+		
+		blockNum = new int[2];
+		blockNum[0] = 0;
+		blockNum[1] = 0;;
 		
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
@@ -85,11 +90,34 @@ public class client {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			calcBlockNumber();
+			
 			// Send a DATA Block to write
+			byte[] dataBlock = createDataPacket();
 			
 			// Wait for an ACK from Server
-			
-			// Check if ACK contains correct block number
+			try {
+				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
+			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
+				System.exit(1);
+			}
+			try {
+				sendReceiveSocket.send(sendPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			// check if end of write
+			int len = 0;
+			for(byte b: dataBlock){
+				if(b == 0 && len > 4) break;
+					len++;
+				}		
+				if(len < 512) {
+					System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+					break;
+				}
 		}
 	}
 	
@@ -164,6 +192,38 @@ public class client {
 				break;
 			}
 		}
+	}
+	
+	/**
+	 * Create a data packet
+	 * @return byte[4] data packet
+	 */
+	public byte[] createDataPacket() {
+		byte[] data = new byte[512 + 4];
+		data[0] = 0;
+		data[1] = 3;
+		data[2] = (byte)blockNum[0];
+		data[3] = (byte)blockNum[1];
+		
+		int multiplier = 0;
+		if(blockNum[1] > 1) multiplier += blockNum[1];
+		if(blockNum[0] > 0) multiplier += (10*blockNum[0]);
+	
+
+		for(int i = 0; i < fileAsBytes.length; i++){
+			if(fileAsBytes.length <= (512*multiplier+i)) break;
+			if((fileAsBytes.length > (512*multiplier+i)) && i < 512){
+				fileAsBytes[i] = fileAsBytes[512*multiplier+i];
+			}		
+		}
+		
+		for(int j = 0; j < fileAsBytes.length; j++){
+			if(fileAsBytes.length <= (512*multiplier+j)) break;
+			if(j == 512) break;
+			data[4+j] = fileAsBytes[j];
+		}
+		
+		return data;
 	}
 	
 	/**

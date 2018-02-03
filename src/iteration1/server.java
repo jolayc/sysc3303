@@ -56,7 +56,8 @@ public class server implements Runnable {
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
 				
-			if(!(rq.equals(read))||(rq.equals(write))){
+			if(!((rq.equals(read))||(rq.equals(write)))){
+		
 				path = toBytes(getPath(receivePacket));
 				rq = checkReadWrite(receivePacket.getData());
 				
@@ -72,6 +73,7 @@ public class server implements Runnable {
 				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
 			}
 			else if(rq.equals(write)){
+				calcBlockNumber();
 				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
 			}
 		}
@@ -89,9 +91,6 @@ public class server implements Runnable {
 		else rq = write;
 		return rq;
 	}
-	
-	
-	
 	
 	/**
 	 * Stops the continuous running loop
@@ -167,6 +166,7 @@ public class server implements Runnable {
 		}
 		return blockNumber;
 	}
+	
 	/**
 	 * Receive a packet being sent to port 69
 	 * @param sock DatagramSocket ported to port 69

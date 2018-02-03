@@ -48,7 +48,9 @@ public class serverThread extends Thread implements Runnable {
 		}
 
 		// send a acknowledge packet when receiving a write request or data packet
-		else if(message.equals(write)) response = createACKPacket();
+		else if(message.equals(write)){
+			response = createACKPacket();
+		}
 		
 		// Construct a socket to send packets to any available port
 		try {
@@ -83,7 +85,7 @@ public class serverThread extends Thread implements Runnable {
 		}
 	}
 	/**
-	 * Create a data packet containing {0,3,0,1}
+	 * Create a data packet
 	 * @return byte[4] data packet
 	 */
 	public byte[] createDataPacket() {
@@ -103,16 +105,13 @@ public class serverThread extends Thread implements Runnable {
 			if((path.length > (512*multiplier+i)) && i < 512){
 				path[i] = path[512*multiplier+i];
 			}
-			
 		}
 		
 		for(int j = 0; j < path.length; j++){
 			if(path.length <= (512*multiplier+j)) break;
 			if(j == 512) break;
-			data[4+j] = path[j];
-			
-		}
-		
+			data[4+j] = path[j];	
+		}	
 		return data;
 	}
 	

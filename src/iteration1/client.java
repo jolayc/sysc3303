@@ -29,7 +29,7 @@ public class client {
 	private String filename;
 	private String mode;
 	
-	private int blockNum;
+	private int[] blockNum;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -87,7 +87,9 @@ public class client {
 		System.out.println("Client: Requesting to read from server with filename: " + filename);
 		byte[] incomingData;
 		byte[] ack;
-		int curBlockNum = 1;
+		blockNum = new int[2];
+		blockNum[0] = 0;
+		blockNum[1] = 1;
 		
 		// Create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
@@ -104,7 +106,6 @@ public class client {
 			// Server responds to a Read Request with a DATA packet (save to receivePacket)
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
-			
 			// Receive packet from server
 			try {
 				sendReceiveSocket.receive(receivePacket);
@@ -113,21 +114,22 @@ public class client {
 				System.exit(1);
 			}
 			// Check block number received
-			int dataBlockNum = getBlockNum(receivePacket.getData());
 			
-			// Compare block
-			if (curBlockNum != dataBlockNum) {
-				System.out.println("Unmatching block numbers, exiting.");
-				System.exit(1);
-			}
 			
 			// Print contents
 			System.out.println("Client: Received DATA block from server: ");
 			printStatus(receivePacket);
 			
 			// Create and send ACK
-			ack = createACKPacket(curBlockNum);
-			sendPacket = new DatagramPacket(ack, ack.length);
+			ack = createACKPacket(blockNum);
+			calcBlockNumber();
+			
+			try {
+				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), 23);
+			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
+				System.exit(1);
+			}
 			try {
 				sendReceiveSocket.send(sendPacket);
 			} catch (IOException e) {
@@ -136,13 +138,16 @@ public class client {
 			}
 			
 			// check if end of read
-			if(incomingData.length < 512) {
-				System.out.println("Client: Read complete, blocks received: " + curBlockNum);
-				break;
+			int len = 0;
+			for(byte b: incomingData){
+				if(b == 0 && len > 4) break;
+				len++;
 			}
 			
-			// increment current block number
-			curBlockNum++;
+			if(len < 512) {
+				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+				break;
+			}
 		}
 	}
 	
@@ -151,29 +156,16 @@ public class client {
 	 * @param block
 	 * @return ACK packet {0, 4, block number(hi), block number(lo)}
 	 */
-	private byte[] createACKPacket(int block) {
+	private byte[] createACKPacket(int[] block) {
 		byte[] pack = new byte[4];
-		byte[] num = new byte[2];
 		// {0, 4} op code
 		pack[0] = zero;
 		pack[1] = four;
-		// convert block number to bytes
-		num[0] = (byte)(block & 0xFF);
-		num[1] = (byte)((block >> 8) & 0xFF);
 		// load block number into ack packet
-		pack[2] = num[0];
-		pack[3] = num[1];
+		pack[2] = (byte)block[0];
+		pack[3] = (byte)block[1];
 				
 		return pack;
-	}
-	
-	/**
-	 * Returns the block number as an integer
-	 * @param data byte[] containing opcode, block num (2 bytes) and data
-	 * @return int Block number
-	 */
-	private int getBlockNum(byte[] data) {
-		return ((data[2] & 0xff) << 8) | (data[3] & 0xff);
 	}
 	
 	public boolean checkACK(byte[] b) {
@@ -292,6 +284,23 @@ public class client {
 	 */
 	public DatagramPacket createReceivePacket(byte[] block){
 		return new DatagramPacket(block, block.length);
+	}
+	
+	private int[] calcBlockNumber(){
+
+		if(blockNum[1] == 9) {
+			blockNum[0]++;
+			blockNum[1] = 0;
+		}
+		else{
+			blockNum[1]++;
+		}
+		
+		if(blockNum[0] > 9){
+			blockNum[0] = 0;
+			blockNum[1] = 1;
+		}
+		return blockNum;
 	}
 
 	/**

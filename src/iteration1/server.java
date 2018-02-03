@@ -1,6 +1,10 @@
 package iteration1;
 
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -21,21 +25,24 @@ public class server implements Runnable {
 	private final byte zero = 0;
 	private final byte one = 1;
 	private final byte two = 2;
+	private byte[] path;
 	
 	private int port = 69;
+	private int offset;
 	
 	private String rq;
+	private String read = "READ";
+	private String write = "WRITE";
 	
-	private int blockNumber;
+	private int[] blockNumber;
 	
-	//private boolean running;
 	
 	public server() {
-		//running = true;
+		
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
-			blockNumber = 0;
+			blockNumber = new int[2];
 			rq = "NONE";
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -50,20 +57,23 @@ public class server implements Runnable {
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
 			// Check request
-			if(rq.equals("NONE")){
+			if(!(rq.equals(read))||(rq.equals(write))){
+				path = toBytes(getPath(receivePacket));
 				rq = checkReadWrite(receivePacket.getData());
-				if(rq.equals("READ")){
-					blockNumber++;
+				
+				if(rq.equals(read)){
+					blockNumber[0] = 0;
+					blockNumber[1] = 1;
 				}
 				// Create a thread to process request
-				new Thread(new serverThread(receivePacket, rq, blockNumber));
+				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
 			}
-			else if(rq.equals("READ")){
-				blockNumber = (byte)(blockNumber + 1);
-				new Thread(new serverThread(receivePacket, rq, blockNumber));
+			else if(rq.equals(read)){
+				calcBlockNumber();
+				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
 			}
-			else if(rq.equals("WRITE")){
-				new Thread(new serverThread(receivePacket, rq, blockNumber));
+			else if(rq.equals(write)){
+				new Thread(new serverThread(receivePacket, path, rq, blockNumber)).start();
 			}
 		}
 		shutdown();
@@ -76,8 +86,8 @@ public class server implements Runnable {
 	 */
 	private String checkReadWrite(byte[] data) {
 	
-		if(data[1] == one) rq = "READ";
-		else rq = "WRITE";
+		if(data[1] == one) rq = read;
+		else rq = write;
 		return rq;
 	}
 	
@@ -101,17 +111,62 @@ public class server implements Runnable {
 		System.out.println("Server: Requests are no longer being taken.");
 		while (true) {} // allows for file transfers in progress to finish but refuse to create new connections
 	}
+	
+	private String getPath(DatagramPacket packet){
+		byte[] data = packet.getData();
+		byte[] filename = new byte[data.length];
+		byte[] path;
 		
-	private void sendPack(DatagramSocket sock, DatagramPacket dp) {
-		printSend(sendPacket);
+		for(int i = 0; i < data.length; i++){
+			if(data[2+i] == 0){
+				path = new byte[i];
+				for(int j = 0; j < i; j++){
+					path[j] = filename[j];
+				}		
+				return new String(path);
+			}
+			else{
+				filename[i] = data[2+i];
+			}
+		}
+		return null;
+	}
+	
+	private byte[] toBytes(String p) {
+		byte[] bytes = null;
+		System.out.println(p);
+		Path path = Paths.get(p);
+		// Try to convert File into byte[]
 		try {
-			sock.send(dp);
+			bytes = Files.readAllBytes(path);
+		} catch (FileNotFoundException fe) {
+			// File not found
+			fe.printStackTrace();
+			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		// return file as bytes
+		return bytes;
 	}
 	
+	private int[] calcBlockNumber(){
+
+		if(blockNumber[1] == 9) {
+			blockNumber[0]++;
+			blockNumber[1] = 0;
+		}
+		else{
+			blockNumber[1]++;
+		}
+		
+		if(blockNumber[0] > 9){
+			blockNumber[0] = 0;
+			blockNumber[1] = 1;
+		}
+		return blockNumber;
+	}
 	/**
 	 * Receive a packet being sent to port 69
 	 * @param sock DatagramSocket ported to port 69
@@ -128,14 +183,6 @@ public class server implements Runnable {
 			System.exit(1);
 		}
 		
-	}
-	
-	// Print information relating to send request 
-	private void printSend(DatagramPacket dp) {
-		System.out.println("Host: Sending packet");
-		System.out.println("To host: " + dp.getAddress());
-		System.out.println("Destination Port: " + dp.getPort());
-		printInfo(dp);
 	}
 	
 	// Print information relating to receive request

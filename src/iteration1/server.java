@@ -216,7 +216,7 @@ public class server implements Runnable {
 				String msg = sc.nextLine().toLowerCase();
 				if (msg.equals("exit")) {
 					sc.close();
-					s.stop();
+					s.shutdown();
 					break;
 				}
 			}

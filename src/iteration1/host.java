@@ -67,24 +67,25 @@ public class host {
 		    sendPack(sendReceiveSocket, sendReceivePacket);
 		    printSend(sendReceivePacket);
 		    
-		    if(stop) break;
+		    if(!stop) {
 		    
-		    //creates a datagram packet that will contain sendData that will be ported to port 69
-		    try {
-				sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), 69);
-			} catch (UnknownHostException e1) {
-				e1.printStackTrace();
-				System.exit(1);
-			}
+		    	//creates a datagram packet that will contain sendData that will be ported to port 69
+		    	try {
+		    		sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), 69);
+		    	} catch (UnknownHostException e1) {
+		    		e1.printStackTrace();
+		    		System.exit(1);
+		    	}
+		    	
+		    	//waits until sendReceivePacket receives a datagram packet from the server
+		    	receivePack(sendReceiveSocket, sendReceivePacket);	   
 		    
-		    //waits until sendReceivePacket receives a datagram packet from the server
-		    receivePack(sendReceiveSocket, sendReceivePacket);	   
-		    
-		    //creates a datagram packet that will be ported to wherever receivePacket is ported to
-		    sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
-		    
-		    //sends sendPacket to the client
-		    sendPack(sendReceiveSocket, sendPacket);	    
+		    	//creates a datagram packet that will be ported to wherever receivePacket is ported to
+		    	sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+		    	
+		    	//sends sendPacket to the client
+		    	sendPack(sendReceiveSocket, sendPacket);	
+		    }
 		}
 	}
 	

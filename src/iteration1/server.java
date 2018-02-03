@@ -92,16 +92,10 @@ public class server implements Runnable {
 		return rq;
 	}
 	
-	/**
-	 * Stops the continuous running loop
-	 * of the server by setting the running flag 
-	 * to false
-	 */
 	private synchronized void stop() {
-		// this method needs to be improved ***
-		//running = false;
-		receiveSocket.close();
-		
+		 // this method needs to be improved ***
+		 //running = false;
+		 receiveSocket.close();		
 	}
 	
 	/**

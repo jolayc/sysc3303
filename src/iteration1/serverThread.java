@@ -40,8 +40,13 @@ public class serverThread extends Thread implements Runnable {
 		byte response[] = new byte[512+4];
 		// create response packet
 		// send data packet when receiving a read request
-		if (message.equals(read)) response = createDataPacket();
-		
+		if (message.equals(read)) {
+			response = createDataPacket();
+			if(response[5] == 0){
+				return;
+			}
+		}
+
 		// send a acknowledge packet when receiving a write request or data packet
 		else if(message.equals(write)) response = createACKPacket();
 		
@@ -108,7 +113,6 @@ public class serverThread extends Thread implements Runnable {
 			
 		}
 		
-		
 		return data;
 	}
 	
@@ -126,36 +130,9 @@ public class serverThread extends Thread implements Runnable {
 		return data;
 	}
 	
-	/**
-	 * Converts a file found at user specified path and converts
-	 * into a byte[]
-	 * @return File as byte[]
-	 */
-	private byte[] toBytes(String filename) {
-		byte[] bytes = null;
-		Scanner sc = new Scanner(System.in);
-		System.out.println("Client: Enter path where file (requested to written) is located: ");
-		String in = sc.nextLine(); // save path input from user
-		Path path = Paths.get(in);
-		// Try to convert File into byte[]
-		try {
-			bytes = Files.readAllBytes(path);
-		} catch (FileNotFoundException fe) {
-			// File not found
-			fe.printStackTrace();
-			System.exit(1);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		sc.close();
-		// return file as bytes
-		return bytes;
-	}
-	
 	// Print information relating to send request 
 	private void printSend(DatagramPacket dp) {
-		System.out.println("Host: Sending packet");
+		System.out.println("Server: Sending packet");
 		System.out.println("To host: " + dp.getAddress());
 		System.out.println("Destination Port: " + dp.getPort());
 		printInfo(dp);

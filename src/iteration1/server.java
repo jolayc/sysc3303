@@ -38,7 +38,6 @@ public class server implements Runnable {
 	
 	
 	public server() {
-		
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
@@ -56,7 +55,7 @@ public class server implements Runnable {
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
-			// Check request
+				
 			if(!(rq.equals(read))||(rq.equals(write))){
 				path = toBytes(getPath(receivePacket));
 				rq = checkReadWrite(receivePacket.getData());
@@ -90,6 +89,8 @@ public class server implements Runnable {
 		else rq = write;
 		return rq;
 	}
+	
+	
 	
 	
 	/**
@@ -144,7 +145,6 @@ public class server implements Runnable {
 			fe.printStackTrace();
 			System.exit(1);
 		} catch (IOException e) {
-			e.printStackTrace();
 			System.exit(1);
 		}
 		// return file as bytes
@@ -179,7 +179,6 @@ public class server implements Runnable {
 		} catch (SocketException se) {
 			System.out.println("Socket is closed");
 		} catch (IOException e) {
-			e.printStackTrace();
 			System.exit(1);
 		}
 		
@@ -187,7 +186,7 @@ public class server implements Runnable {
 	
 	// Print information relating to receive request
 	private void printReceive(DatagramPacket dp) {
-		System.out.println("Host: Packet received");
+		System.out.println("Server: Packet received");
 		System.out.println("From host: " + dp.getAddress());
 		System.out.println("Port: " + dp.getPort());
 		printInfo(dp);

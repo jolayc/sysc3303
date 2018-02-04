@@ -17,6 +17,8 @@ public class ErrorSimulator {
 	
 	/**
 	 * Constructor for host
+	 * creates a Datagram Socket to receive packets from client on port 23.
+	 * creates Datagram Socket to send and receive packets from server on any avalible port
 	 */
 	public ErrorSimulator(){
 		try {

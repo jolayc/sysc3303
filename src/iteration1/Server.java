@@ -37,8 +37,9 @@ public class Server implements Runnable {
 	
 	/**
 	 * Constructor for server
+	 * @return 
 	 */
-	public server() {
+	public Server() {
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
@@ -113,9 +114,9 @@ public class Server implements Runnable {
 	}
 	
 	/**
-	 * 
-	 * @param packet
-	 * @return
+	 * Gets the path of the data in the DatagramPacket
+	 * @param packet DatagramPacket with the path
+	 * @return String, with the path
 	 */
 	private String getPath(DatagramPacket packet){
 		byte[] data = packet.getData();
@@ -208,7 +209,7 @@ public class Server implements Runnable {
 	}
 	
 	public static void main(String[] args) {
-		server s = new server();
+		Server s = new Server();
 		new Thread(s).start();
 		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);

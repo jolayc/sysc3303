@@ -1,7 +1,7 @@
 package iteration1;
 /**
  * Error Simulator of a client/server TFTP application
- * The Intermediate Host receives a request packet from a client and then
+ * The Error Simulator receives a request packet from a client and then
  * sends it to the server
  * It then receives from the server a reply packet back to the original client
  */
@@ -18,7 +18,7 @@ public class ErrorSimulator {
 	/**
 	 * Constructor for host
 	 */
-	public host(){
+	public ErrorSimulator(){
 		try {
 			//Constructs a socket to receive packets bounded to port 23
 			receiveSocket = new DatagramSocket(23);
@@ -167,8 +167,8 @@ public class ErrorSimulator {
 	}
 	
 	public static void main(String args[]){
-		host h = new host();
-		h.receiveAndSend();
+		ErrorSimulator e = new ErrorSimulator();
+		e.receiveAndSend();
 	}
 
 }

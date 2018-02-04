@@ -30,7 +30,7 @@ public class Client {
 	private DatagramPacket sendPacket, receivePacket;
 
 	
-	public client(){
+	public Client(){
 		try {
 			//constructs a socket to send and receive packets from any available port
 			sendReceiveSocket = new DatagramSocket();
@@ -450,7 +450,7 @@ public class Client {
 	}
 	
 	public static void main(String args[]){
-		client c = new client();
+		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
 		
 		while (true) {

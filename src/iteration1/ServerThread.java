@@ -53,19 +53,66 @@ public class ServerThread extends Thread implements Runnable {
 			e1.printStackTrace();
 			System.exit(1);
 		}
-		
-		// create a datagram packet that will contain sendBytes that will be ported to the same
-		// port as receivePacket
-		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
+
+		if (message.equals(read)) {
+			response = createDataPacket();
+			if(response[5] == 0) {
+				return;
+			}
+			// create a datagram packet that will contain sendBytes that will be ported to the same
+			// port as receivePacket
+			try {
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			sendPack(sendSocket, sendPacket);
 		}
-		
-		sendPack(sendSocket, sendPacket);
-		// close socket when done sending the packet and stop thread
+		if (message.equals(write)) {
+			byte[] data = receivePacket.getData();
+			//try {
+				switch(data[1]) {
+				case (byte)2:
+					// Handle Write request packet received
+					handleWriteRequest(data);
+				case (byte)3:
+					// Handle Data packet received
+					handleData(data);
+				default:
+					break;
+				}
+		//	} catch (IOException e) {
+			//	e.printStackTrace();
+			//	System.exit(1);
+		//	}
+			response = createACKPacket();
+			try {
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			sendPack(sendSocket, sendPacket);
+		}
 		sendSocket.close();
+	}
+	
+	/**
+	 * A function that creates a new file when receiving a write request
+	 * @param data	The incoming data from the client
+	 */
+	private void handleWriteRequest(byte[] data) {
+		System.out.println("Request");
+	}
+	
+	/**
+	 * Creates a file (on machine) with requested file name to be written to
+	 * if it does not already exist
+	 * @param data
+	 */
+	private void handleData(byte[] data) {
+		System.out.println("Something");
 	}
 	
 	private void sendPack(DatagramSocket sock, DatagramPacket dp) {

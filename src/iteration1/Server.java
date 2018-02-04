@@ -214,7 +214,7 @@ public class Server implements Runnable {
 		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);
 		
-		//Check forn exit command
+		//Check for exit command
 		for(;;) {
 			if (sc.hasNextLine()) {
 				String msg = sc.nextLine().toLowerCase();

@@ -22,7 +22,7 @@ public class Server implements Runnable {
 	private DatagramSocket receiveSocket;
 	private DatagramPacket receivePacket;
 	
-	private final byte one = 1;
+	private final byte ONE = 1;
 
 	private byte[] path;
 	
@@ -37,6 +37,8 @@ public class Server implements Runnable {
 	
 	/**
 	 * Constructor for server
+	 * creates a socket to receive packets from host on port 69
+	 * creates block number
 	 */
 	public Server() {
 		try {
@@ -91,7 +93,7 @@ public class Server implements Runnable {
 	 */
 	private String checkReadWrite(byte[] data) {
 	
-		if(data[1] == one) rq = read;
+		if(data[1] == ONE) rq = read;
 		else rq = write;
 		return rq;
 	}
@@ -113,9 +115,9 @@ public class Server implements Runnable {
 	}
 	
 	/**
-	 * 
-	 * @param packet
-	 * @return
+	 * Gets the path of the data in the DatagramPacket
+	 * @param packet DatagramPacket with the path
+	 * @return String, with the path
 	 */
 	private String getPath(DatagramPacket packet){
 		byte[] data = packet.getData();
@@ -136,6 +138,11 @@ public class Server implements Runnable {
 		}
 		return null;
 	}
+	/**
+	 * converts contents of file to byte array
+	 * @param p path to file 
+	 * @return byte array with the contents of file
+	 */
 	
 	private byte[] toBytes(String p) {
 		byte[] bytes = null;
@@ -154,6 +161,10 @@ public class Server implements Runnable {
 		// return file as bytes
 		return bytes;
 	}
+	/**
+	 * increments block number 
+	 * @return block number as array on integers
+	 */
 	
 	private int[] calcBlockNumber(){
 
@@ -185,7 +196,10 @@ public class Server implements Runnable {
 		
 	}
 	
-	// Print information relating to receive request
+	/**
+	 * Print information relating to receive request
+	 * @param dp datagram Packet being printed
+	 */
 	private void printReceive(DatagramPacket dp) {
 		System.out.println("Server: Packet received");
 		System.out.println("From host: " + dp.getAddress());
@@ -193,7 +207,10 @@ public class Server implements Runnable {
 		printInfo(dp);
 	}
 	
-	// Print information relating to packet
+	/**
+	 *  Print information relating to packet
+	 * @param dp datagram Packet being printed
+	 */
 	private void printInfo(DatagramPacket dp) {
 		int len = dp.getLength();
 		System.out.println("Length: " + len);

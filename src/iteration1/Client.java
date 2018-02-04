@@ -20,6 +20,7 @@ public class Client {
 	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
+	private final byte TWO = 0x02;
 	private final byte FOUR = 0x04;
 	
 	private int[] blockNum;
@@ -308,8 +309,8 @@ public class Client {
 		String mode = "netascii";
 		// |Opcode (2 bytes)|
 		byte[] wrq = new byte[4 + filename.length() + mode.length()];
-		wrq[0] = ONE;
-		wrq[1] = ZERO;
+		wrq[0] = ZERO;
+		wrq[1] = TWO;
 		
 		finishRRQOrWRQ(wrq, filename, mode);
 		

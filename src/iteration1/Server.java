@@ -37,7 +37,6 @@ public class Server implements Runnable {
 	
 	/**
 	 * Constructor for server
-	 * @return 
 	 */
 	public Server() {
 		try {
@@ -114,9 +113,9 @@ public class Server implements Runnable {
 	}
 	
 	/**
-	 * Gets the path of the data in the DatagramPacket
-	 * @param packet DatagramPacket with the path
-	 * @return String, with the path
+	 * 
+	 * @param packet
+	 * @return
 	 */
 	private String getPath(DatagramPacket packet){
 		byte[] data = packet.getData();

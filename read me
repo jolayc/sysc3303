@@ -18,6 +18,17 @@ README file
 UCM read file transfer and write file transfer Diagrams
 - UCM Diagrams.PDF
 
+Client Class
+- 
+
+Server Class
+- 
+
+ErrorSimulator Class
+- 
+
+ServerThread Class
+- 
 
 
 ==================== -[Set Up Instructions]- ====================
@@ -59,6 +70,7 @@ Assuming all files are open in eclipse java, do the following to properly run th
 
 	[Eric Scott]
 - Client class edits
+- Final commenting of code
 
 	[Karl Schnalzer]
 - Client class edits

@@ -1,5 +1,7 @@
 package iteration1;
 import java.net.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -12,7 +14,9 @@ public class ServerThread extends Thread implements Runnable {
 	
 	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
-	
+	// The directory where files will be written to
+	private String dir = System.getProperty("user.home");
+	private Writer writer;
 	private int[] blockNumber;
 	
 	// String identifiers
@@ -71,7 +75,7 @@ public class ServerThread extends Thread implements Runnable {
 		}
 		if (message.equals(write)) {
 			byte[] data = receivePacket.getData();
-			//try {
+			try {
 				switch(data[1]) {
 				case (byte)2:
 					// Handle Write request packet received
@@ -82,10 +86,10 @@ public class ServerThread extends Thread implements Runnable {
 				default:
 					break;
 				}
-		//	} catch (IOException e) {
-			//	e.printStackTrace();
-			//	System.exit(1);
-		//	}
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 			response = createACKPacket();
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
@@ -102,8 +106,16 @@ public class ServerThread extends Thread implements Runnable {
 	 * A function that creates a new file when receiving a write request
 	 * @param data	The incoming data from the client
 	 */
-	private void handleWriteRequest(byte[] data) {
-		System.out.println("Request");
+	private void handleWriteRequest(byte[] data) throws IOException {
+		try {
+			File f = new File(dir + path.toString());
+			if (f.exists()) {
+				throw new FileAlreadyExistsException("File already exists.");
+			}
+			writer = new Writer(f.getPath(), false);
+		} catch (FileAlreadyExistsException e) {
+			System.out.println("File already exists.");
+		}
 	}
 	
 	/**
@@ -111,8 +123,17 @@ public class ServerThread extends Thread implements Runnable {
 	 * if it does not already exist
 	 * @param data
 	 */
-	private void handleData(byte[] data) {
-		System.out.println("Something");
+	private void handleData(byte[] data) throws IOException {
+		try {
+			writer.write(data);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		if (data.length < 516) {
+			writer.close();
+			System.out.println("Server: File transfer/write complete.");
+		}
 	}
 	
 	private void sendPack(DatagramSocket sock, DatagramPacket dp) {

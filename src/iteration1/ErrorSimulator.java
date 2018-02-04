@@ -167,13 +167,9 @@ public class ErrorSimulator {
 	}
 	
 	public static void main(String args[]){
-<<<<<<< HEAD
-		ErrorSimulator e = new ErrorSimulator();
-		e.receiveAndSend();
-=======
+		
 		ErrorSimulator sim = new ErrorSimulator();
 		sim.receiveAndSend();
->>>>>>> branch 'master' of https://github.com/jolayc/sysc3303
 	}
 
 }

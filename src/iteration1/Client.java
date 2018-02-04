@@ -18,9 +18,9 @@ import java.nio.file.Paths;
 
 public class Client {
 	
-	private final byte zero = 0x00;
-	private final byte one = 0x01;
-	private final byte four = 0x04;
+	private final byte ZERO = 0x00;
+	private final byte ONE = 0x01;
+	private final byte FOUR = 0x04;
 	
 	private int[] blockNum;
 	
@@ -29,12 +29,15 @@ public class Client {
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 
-	
+	/**
+	 * Constructor for client
+	 * constructs a socket to send and receive packets from any available port
+	 */
 	public Client(){
 		try {
-			//constructs a socket to send and receive packets from any available port
+			
 			sendReceiveSocket = new DatagramSocket();
-			byte[] data = new byte[4];
+			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
 		catch (SocketException se){
@@ -54,7 +57,7 @@ public class Client {
 
 		blockNum = new int[2];
 		blockNum[0] = 0;
-		blockNum[1] = 0;;
+		blockNum[1] = 0;
 
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
@@ -188,7 +191,7 @@ public class Client {
 	
 	/**
 	 * Create a data packet
-	 * @return byte[4] data packet
+	 * @return byte[516] data packet
 	 */
 	public byte[] createDataPacket() {
 		byte[] data = new byte[512 + 4];
@@ -226,8 +229,8 @@ public class Client {
 	private byte[] createACKPacket(int[] block) {
 		byte[] pack = new byte[4];
 		// {0, 4} op code
-		pack[0] = zero;
-		pack[1] = four;
+		pack[0] = ZERO;
+		pack[1] = FOUR;
 		// load block number into ack packet
 		pack[2] = (byte)block[0];
 		pack[3] = (byte)block[1];
@@ -289,8 +292,8 @@ public class Client {
 		String mode = "netascii";
 		// |Opcode (2 bytes)|
 		byte[] rrq = new byte[4 + filename.length() + mode.length()];
-		rrq[0] = zero;
-		rrq[1] = one;
+		rrq[0] = ZERO;
+		rrq[1] = ONE;
 		// |Filename|0|Mode|0|
 		finishRRQOrWRQ(rrq, filename, mode);
 		
@@ -305,8 +308,8 @@ public class Client {
 		String mode = "netascii";
 		// |Opcode (2 bytes)|
 		byte[] wrq = new byte[4 + filename.length() + mode.length()];
-		wrq[0] = one;
-		wrq[1] = zero;
+		wrq[0] = ONE;
+		wrq[1] = ZERO;
 		
 		finishRRQOrWRQ(wrq, filename, mode);
 		
@@ -326,12 +329,12 @@ public class Client {
 	    	rq[2 + ch] = filebyte[ch];
 	    }
 		
-		rq[3 + filebyte.length] = zero;
+		rq[3 + filebyte.length] = ZERO;
 		
 		for(int ch = 0; ch < modebyte.length; ch++){
 			rq[3 + filebyte.length + ch] = modebyte[ch];
 	    }
-		rq[3 + filebyte.length + modebyte.length] = zero;
+		rq[3 + filebyte.length + modebyte.length] = ZERO;
 	}
 	
 	/**
@@ -442,7 +445,10 @@ public class Client {
 		// return file as bytes
 		return bytes;
 	}
-	
+	/**
+	 * Shuts down the server by closing the socket used
+	 * for receiving
+	 */
 	private void shutdown() {
 		sendReceiveSocket.close();
 		System.out.println("Client: Terminated.");

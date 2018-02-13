@@ -1,4 +1,4 @@
-package iteration1;
+package iteration2;
 
 import java.io.IOException;
 import java.net.*;
@@ -111,7 +111,7 @@ public class Client {
 				len++;
 			}		
 			if(len < 512) {
-				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+				System.out.println("Client: Write complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
 		}
@@ -442,7 +442,7 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		//sc.close();
+		s.close();
 		// return file as bytes
 		return bytes;
 	}

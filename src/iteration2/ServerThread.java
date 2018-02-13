@@ -1,4 +1,4 @@
-package iteration1;
+package iteration2;
 import java.net.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.io.File;
@@ -117,7 +117,7 @@ public class ServerThread extends Thread implements Runnable {
 	 */
 	private void handleWriteRequest(byte[] data) throws IOException {
 		try {
-			File f = new File(dir + path.toString());
+			File f = new File(dir, path.toString());
 			if (f.exists()) {
 				throw new FileAlreadyExistsException("File already exists.");
 			}

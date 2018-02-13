@@ -1,4 +1,4 @@
-package iteration2;
+package iter2;
 /**
  * Error Simulator of a client/server TFTP application
  * The Error Simulator receives a request packet from a client and then

@@ -1,4 +1,4 @@
-package iteration2;
+package iter2;
 
 public enum ErrorCode {
 

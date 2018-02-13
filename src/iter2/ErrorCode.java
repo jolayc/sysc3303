@@ -20,8 +20,9 @@ public enum ErrorCode {
 		else throw new IllegalArgumentException("Invalid opcode");
 	}
 	
-	int getOpcode() {
-		return opcode;
+	Byte[] getOpcode() {
+		Byte[] opcodeByte= new Byte[]{0,opcode};
+		return opcodeByte;
 	}
 	
 }

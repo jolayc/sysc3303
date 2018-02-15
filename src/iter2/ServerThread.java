@@ -15,7 +15,7 @@ public class ServerThread extends Thread implements Runnable {
 	private DatagramSocket sendSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	// The directory where files will be written to
-	private String dir = System.getProperty("user.home");
+	private String relativePath = System.getProperty("user.dir");
 	private Writer writer;
 	private int[] blockNumber;
 	
@@ -116,15 +116,33 @@ public class ServerThread extends Thread implements Runnable {
 	 * @param data	The incoming data from the client
 	 */
 	private void handleWriteRequest(byte[] data) throws IOException {
+		String name = getFilename(data);
 		try {
-			File f = new File(dir, path.toString());
-			if (f.exists()) {
-				throw new FileAlreadyExistsException("File already exists.");
-			}
+			File f = new File(relativePath + "\\Server\\" + name);
 			writer = new Writer(f.getPath(), false);
 		} catch (FileAlreadyExistsException e) {
 			System.out.println("File already exists.");
 		}
+	}
+	
+	/**
+	 * A function that returns the file name of a String
+	 * from a Request packet
+	 * @param data		The RQ packet as a byte[]
+	 * @return			File name in RQ packet 
+	 */
+	private String getFilename(byte[] data) {
+		int size = 0;
+		for(int i = 2; i < data.length; i++) {
+			if(data[i] == 0) break;
+			size++;
+		}
+		byte[] temp = new byte[size];
+		
+		for(int i = 0; i < temp.length; i++) {
+			temp[i] = data[i+2];
+		}	
+		return new String(temp);	
 	}
 	
 	/**

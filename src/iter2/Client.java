@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,18 +25,22 @@ public class Client {
 	private final byte TWO = 0x02;
 	private final byte FOUR = 0x04;
 	
+	private Writer writer;
+	
 	private int[] blockNum;
 	
 	private byte[] fileAsBytes;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
+	
+	private String relativePath = System.getProperty("user.dir");
 
 	/**
 	 * Constructor for client
 	 * constructs a socket to send and receive packets from any available port
 	 */
-	public Client(){
+	public Client() {
 		try {
 			
 			sendReceiveSocket = new DatagramSocket();
@@ -71,7 +77,7 @@ public class Client {
 		}
 
 		// Prompt user to provide path of file and convert to byte[]
-		fileAsBytes = toBytes();
+		fileAsBytes = toBytes(filename);
 
 		//Process response from Server
 		while(true) {
@@ -111,7 +117,7 @@ public class Client {
 				len++;
 			}		
 			if(len < 512) {
-				System.out.println("Client: Write complete, blocks received: " + blockNum[0] + blockNum[1]);
+				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
 		}
@@ -140,6 +146,19 @@ public class Client {
 			System.exit(1);
 		}
 		
+		// Create writer and file with filename in Client folder
+		try { 
+			File f = new File(relativePath + "\\Client\\" + filename);
+			writer = new Writer(f.getPath(), false);
+		} catch (FileAlreadyExistsException fe) {
+			fe.printStackTrace();
+			System.out.println("File already exists in Client folder.");
+			System.exit(1);;
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
 		// Process response from Server
 		while (true) {
 			// Server responds to a Read Request with a DATA packet (save to receivePacket)
@@ -154,11 +173,17 @@ public class Client {
 			}
 			// Check block number received
 			
-			
 			// Print contents
 			System.out.println("Client: Received DATA block from server: ");
 			printStatus(receivePacket);
 			
+			//Write contents to file in Client folder
+			try {
+				writer.write(receivePacket.getData());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
@@ -425,13 +450,10 @@ public class Client {
 	 * into a byte[]
 	 * @return File as byte[]
 	 */
-	private byte[] toBytes() {
+	private byte[] toBytes(String filename) {
 		byte[] bytes = null;
-		Scanner s = new Scanner(System.in);
-		System.out.println("Client: Enter path where file (requested to written) is located: ");
-		String in = s.nextLine(); // save path input from user
-		Path path = Paths.get(in);
-		// Try to convert File into byte[]
+		String s = relativePath + "\\Client\\" + filename; // Go into Client folder of user directory and find txt file
+		Path path = Paths.get(s);
 		try {
 			bytes = Files.readAllBytes(path);
 		} catch (FileNotFoundException fe) {
@@ -442,7 +464,6 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		s.close();
 		// return file as bytes
 		return bytes;
 	}

@@ -27,7 +27,7 @@ public class Server implements Runnable {
 	private byte[] path;
 	
 	private int port = 69;
-	//private int offset;
+	private String relativePath = System.getProperty("user.dir");
 	
 	private String rq;
 	private String read = "READ";
@@ -63,8 +63,8 @@ public class Server implements Runnable {
 			receivePack(receiveSocket, receivePacket);
 				
 			if(!((rq.equals(read))||(rq.equals(write)))){
-		
-				path = toBytes(getPath(receivePacket));
+				// might need to be fixed here
+				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
 				rq = checkReadWrite(receivePacket.getData());
 				
 				if(rq.equals(read)){
@@ -146,7 +146,7 @@ public class Server implements Runnable {
 	
 	private byte[] toBytes(String p) {
 		byte[] bytes = null;
-		System.out.println(p);
+		//System.out.println(p);
 		Path path = Paths.get(p);
 		// Try to convert File into byte[]
 		try {
@@ -231,7 +231,7 @@ public class Server implements Runnable {
 		Scanner sc = new Scanner(System.in);
 		
 		//Check for exit command
-		for(;;) {
+		while(true) {
 			if (sc.hasNextLine()) {
 				String msg = sc.nextLine().toLowerCase();
 				if (msg.equals("exit")) {

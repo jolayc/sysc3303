@@ -123,9 +123,14 @@ public class ServerThread extends Thread implements Runnable {
 	 * @param data
 	 */
 	private void handleData(byte[] data) throws IOException {
+		byte[] cleanedData = new byte[data.length - 4];
 		try {
 			writer = new Writer(file.getPath(), true);
-			writer.write(data);
+			for(int i = 0; i < cleanedData.length; i++) {
+				if(data[i+4] == 0) break;
+				cleanedData[i] = data[4+i];
+			}
+			writer.write(cleanedData);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

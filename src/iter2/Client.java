@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -182,6 +183,7 @@ public class Client {
 			//Write contents to file in Client folder
 			try {
 				for(int i = 0; i < cleanedData.length; i++) {
+					if(receivePacket.getData()[4+1] == (byte)0) { break; }
 					cleanedData[i] = receivePacket.getData()[4+i];
 				}
 				writer.write(cleanedData);
@@ -461,10 +463,9 @@ public class Client {
 		Path path = Paths.get(s);
 		try {
 			bytes = Files.readAllBytes(path);
-		} catch (FileNotFoundException fe) {
+		} catch (NoSuchFileException fe) {
 			// File not found
-			fe.printStackTrace();
-			System.exit(1);
+		    
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

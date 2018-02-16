@@ -6,23 +6,18 @@ public enum ErrorCode {
 	ACCESS_VIOLATION(2),
 	DISK_FULL_OR_ALLOCATION_EXCEEDED(3),
 	FILE_ALREADY_EXISTS(6);
-	private int opcode;
+	private int code;
 	
-	ErrorCode(int opcode) {
-		this.opcode = opcode;
+	ErrorCode(int code) {
+		this.code = code;
 	}
 	
-	static ErrorCode getErrorCode(int opcode) throws IllegalArgumentException {
-		if(opcode == 1) return FILE_NOT_FOUND;
-		if(opcode == 2) return ACCESS_VIOLATION;
-		if(opcode == 3) return DISK_FULL_OR_ALLOCATION_EXCEEDED;
-		if(opcode == 6) return FILE_ALREADY_EXISTS;
+	static ErrorCode getErrorCode(int code) throws IllegalArgumentException {
+		if(code == 1) return FILE_NOT_FOUND;
+		if(code == 2) return ACCESS_VIOLATION;
+		if(code == 3) return DISK_FULL_OR_ALLOCATION_EXCEEDED;
+		if(code == 6) return FILE_ALREADY_EXISTS;
 		else throw new IllegalArgumentException("Invalid opcode");
-	}
-	
-	Byte[] getOpcode() {
-		Byte[] opcodeByte= new Byte[]{0,(byte) opcode};
-		return opcodeByte;
 	}
 	
 }

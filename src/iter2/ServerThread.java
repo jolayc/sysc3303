@@ -24,6 +24,8 @@ public class ServerThread extends Thread implements Runnable {
 	private String read = "READ";
 	private String write = "WRITE";
 	
+	private File file;
+	
 	private byte[] path;
 	/**
 	 * Constructor for ServerThread
@@ -33,9 +35,10 @@ public class ServerThread extends Thread implements Runnable {
 	 * @param blockNumber is the current block number of the file 
 	 */
 
-	public ServerThread(DatagramPacket receivePacket, byte[] path, String message, int[] blockNumber) {
+	public ServerThread(DatagramPacket receivePacket, byte[] path, File file, String message, int[] blockNumber) {
 		this.message = message;
 		this.receivePacket = receivePacket;
+		this.file = file;
 		this.path = path;
 		this.blockNumber = blockNumber;
 	}
@@ -89,6 +92,7 @@ public class ServerThread extends Thread implements Runnable {
 				case (byte)2:
 					// Handle Write request packet received
 					handleWriteRequest(data);
+					break;
 				case (byte)3:
 					// Handle Data packet received
 					handleData(data);
@@ -118,8 +122,7 @@ public class ServerThread extends Thread implements Runnable {
 	private void handleWriteRequest(byte[] data) throws IOException {
 		String name = getFilename(data);
 		try {
-			File f = new File(relativePath + "\\Server\\" + name);
-			writer = new Writer(f.getPath(), false);
+			writer = new Writer(file.getPath(), false);
 		} catch (FileAlreadyExistsException e) {
 			System.out.println("File already exists.");
 		}
@@ -152,6 +155,9 @@ public class ServerThread extends Thread implements Runnable {
 	 */
 	private void handleData(byte[] data) throws IOException {
 		try {
+			if(writer == null) {
+				writer = new Writer(file.getPath(), false);
+			}
 			writer.write(data);
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -22,7 +22,7 @@ public class Client {
 	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
-	private final byte TWO = 0x02;
+	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x04;
 	
 	private Writer writer;
@@ -176,10 +176,14 @@ public class Client {
 			// Print contents
 			System.out.println("Client: Received DATA block from server: ");
 			printStatus(receivePacket);
+			byte[] cleanedData = new byte[receivePacket.getData().length - 4];
 			
 			//Write contents to file in Client folder
 			try {
-				writer.write(receivePacket.getData());
+				for(int i = 0; i < cleanedData.length; i++) {
+					cleanedData[i] = receivePacket.getData()[4+i];
+				}
+				writer.write(cleanedData);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);

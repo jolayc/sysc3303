@@ -21,7 +21,7 @@ public enum ErrorCode {
 	}
 	
 	Byte[] getOpcode() {
-		Byte[] opcodeByte= new Byte[]{0,opcode};
+		Byte[] opcodeByte= new Byte[]{0,(byte) opcode};
 		return opcodeByte;
 	}
 	

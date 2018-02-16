@@ -4,6 +4,7 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,6 +35,8 @@ public class Server implements Runnable {
 	private String write = "WRITE";
 	
 	private int[] blockNumber;
+
+	private File f;
 	
 	/**
 	 * Constructor for server
@@ -64,23 +67,29 @@ public class Server implements Runnable {
 				
 			if(!((rq.equals(read))||(rq.equals(write)))){
 				// might need to be fixed here
-				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
 				rq = checkReadWrite(receivePacket.getData());
 				
 				if(rq.equals(read)){
+					path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
 					blockNumber[0] = 0;
 					blockNumber[1] = 1;
+					new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
 				}
-				// Create a thread to process request
-				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
+				
+				if(rq.equals(write)) {
+					path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
+					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
+				}
+				
 			}
 			else if(rq.equals(read)){
 				calcBlockNumber();
-				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
 			}
 			else if(rq.equals(write)){
 				calcBlockNumber();
-				new Thread(new ServerThread(receivePacket, path, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
 			}
 		}
 		shutdown();
@@ -138,6 +147,26 @@ public class Server implements Runnable {
 		}
 		return null;
 	}
+	
+	/**
+	 * A function that returns the file name of a String
+	 * from a Request packet
+	 * @param data		The RQ packet as a byte[]
+	 * @return			File name in RQ packet 
+	 */
+	private String getFilename(byte[] data) {
+		int size = 0;
+		for(int i = 2; i < data.length; i++) {
+			if(data[i] == 0) break;
+			size++;
+		}
+		byte[] temp = new byte[size];
+		
+		for(int i = 0; i < temp.length; i++) {
+			temp[i] = data[i+2];
+		}	
+		return new String(temp);	
+	}
 	/**
 	 * converts contents of file to byte array
 	 * @param p path to file 
@@ -146,7 +175,7 @@ public class Server implements Runnable {
 	
 	private byte[] toBytes(String p) {
 		byte[] bytes = null;
-		//System.out.println(p);
+		System.out.println(p);
 		Path path = Paths.get(p);
 		// Try to convert File into byte[]
 		try {

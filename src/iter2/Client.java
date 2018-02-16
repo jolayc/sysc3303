@@ -42,7 +42,6 @@ public class Client {
 	 */
 	public Client() {
 		try {
-			
 			sendReceiveSocket = new DatagramSocket();
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
@@ -176,6 +175,8 @@ public class Client {
 			// Print contents
 			System.out.println("Client: Received DATA block from server: ");
 			printStatus(receivePacket);
+			
+			//removes first four bytes
 			byte[] cleanedData = new byte[receivePacket.getData().length - 4];
 			
 			//Write contents to file in Client folder

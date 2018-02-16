@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public class ServerThread extends Thread implements Runnable {
 	
-	private DatagramSocket sendSocket;
+	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
 	// The directory where files will be written to
 	private String relativePath = System.getProperty("user.dir");
@@ -23,10 +23,15 @@ public class ServerThread extends Thread implements Runnable {
 	private String message;
 	private String read = "READ";
 	private String write = "WRITE";
-	
 	private File file;
 	
 	private byte[] path;
+	private int[] blockNum;
+	
+	private final byte ZERO = 0x00;
+	private final byte ONE = 0x01;
+	private final byte TWO = 0x02; 
+	private final byte FOUR = 0x04;
 	/**
 	 * Constructor for ServerThread
 	 * @param receivePacket packet received from host
@@ -46,7 +51,6 @@ public class ServerThread extends Thread implements Runnable {
 	 * Run handles the packets received from the host. 
 	 */
 	public void run() {
-	
 		byte response[] = new byte[512+4];
 		// create response packet
 		// send data packet when receiving a read request
@@ -64,7 +68,7 @@ public class ServerThread extends Thread implements Runnable {
 		
 		// Construct a socket to send packets to any available port
 		try {
-			sendSocket = new DatagramSocket();
+			sendReceiveSocket = new DatagramSocket();
 		} catch (SocketException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -83,16 +87,12 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			sendPack(sendSocket, sendPacket);
+			sendPack(sendReceiveSocket, sendPacket);
 		}
 		if (message.equals(write)) {
 			byte[] data = receivePacket.getData();
 			try {
 				switch(data[1]) {
-				case (byte)2:
-					// Handle Write request packet received
-					handleWriteRequest(data);
-					break;
 				case (byte)3:
 					// Handle Data packet received
 					handleData(data);
@@ -110,44 +110,13 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			sendPack(sendSocket, sendPacket);
+			sendPack(sendReceiveSocket, sendPacket);
 		}
-		sendSocket.close();
+		sendReceiveSocket.close();
 	}
 	
-	/**
-	 * A function that creates a new file when receiving a write request
-	 * @param data	The incoming data from the client
-	 */
-	private void handleWriteRequest(byte[] data) throws IOException {
-		String name = getFilename(data);
-		try {
-			writer = new Writer(file.getPath(), false);
-		} catch (FileAlreadyExistsException e) {
-			System.out.println("File already exists.");
-		}
-	}
 	
-	/**
-	 * A function that returns the file name of a String
-	 * from a Request packet
-	 * @param data		The RQ packet as a byte[]
-	 * @return			File name in RQ packet 
-	 */
-	private String getFilename(byte[] data) {
-		int size = 0;
-		for(int i = 2; i < data.length; i++) {
-			if(data[i] == 0) break;
-			size++;
-		}
-		byte[] temp = new byte[size];
-		
-		for(int i = 0; i < temp.length; i++) {
-			temp[i] = data[i+2];
-		}	
-		return new String(temp);	
-	}
-	
+
 	/**
 	 * Creates a file (on machine) with requested file name to be written to
 	 * if it does not already exist
@@ -155,9 +124,7 @@ public class ServerThread extends Thread implements Runnable {
 	 */
 	private void handleData(byte[] data) throws IOException {
 		try {
-			if(writer == null) {
-				writer = new Writer(file.getPath(), false);
-			}
+			writer = new Writer(file.getPath(), true);
 			writer.write(data);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -166,8 +133,10 @@ public class ServerThread extends Thread implements Runnable {
 		if (data.length < 516) {
 			writer.close();
 			System.out.println("Server: File transfer/write complete.");
+
 		}
 	}
+	
 	/**
 	 * Sends a packet to a socket
 	 * @param socket, DatagramSocket where the packet will be sent
@@ -183,6 +152,25 @@ public class ServerThread extends Thread implements Runnable {
 			System.exit(1);
 		}
 	}
+	
+	/**
+	 * Calculates the current block number
+	 * @return int[] which is the current block number
+	 */
+	private int[] calcBlockNumber(){
+
+		//if block number needs another ten value
+		if(blockNum[1] == 9) {
+			blockNum[0]++;
+			blockNum[1] = 0;
+		}
+		else{
+			blockNum[1]++;
+		}
+		
+		return blockNum;
+	}
+	
 	/**
 	 * Create a data packet
 	 * @return byte[516] data packet
@@ -226,6 +214,18 @@ public class ServerThread extends Thread implements Runnable {
 		data[3] = (byte)blockNumber[1];
 		
 		return data;
+	}
+	
+	public byte[] createACKPacket(int[] block) {
+		byte[] pack = new byte[4];
+		// {0, 4} op code
+		pack[0] = ZERO;
+		pack[1] = FOUR;
+		// load block number into ack packet
+		pack[2] = (byte)block[0];
+		pack[3] = (byte)block[1];
+				
+		return pack;
 	}
 	
 	/**

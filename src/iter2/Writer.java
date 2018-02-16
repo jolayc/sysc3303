@@ -2,6 +2,7 @@ package iter2;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * A class used to write byte[] to a file

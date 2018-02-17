@@ -175,6 +175,8 @@ public class Client {
 			File f = new File(relativePath + "\\Client\\" + filename);
 			writer = new Writer(f.getPath(), false);
 		} catch (IOException e) {
+			//Disk space is full
+			
 			ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
 			sendErrorPacket(diskFull);
 			System.out.println("Disk Space in client full.");
@@ -253,8 +255,12 @@ public class Client {
 	 */
 	public byte[] createDataPacket() {
 		byte[] data = new byte[512 + 4];
+		
+		//opcode bytes
 		data[0] = 0;
 		data[1] = 3;
+		
+		//block number bytes
 		data[2] = (byte)blockNum[0];
 		data[3] = (byte)blockNum[1];
 		
@@ -262,7 +268,7 @@ public class Client {
 		if(blockNum[1] > 1) multiplier += blockNum[1];
 		if(blockNum[0] > 0) multiplier += (10*blockNum[0]);
 	
-
+		
 		for(int i = 0; i < fileAsBytes.length; i++){
 			if(fileAsBytes.length <= (512*multiplier+i)) break;
 			if((fileAsBytes.length > (512*multiplier+i)) && i < 512){
@@ -420,6 +426,10 @@ public class Client {
 		return new DatagramPacket(block, block.length);
 	}
 	
+	/**
+	 * Sends ErrorPacket to the server
+	 * @param error, ErrorPacket that will be sent
+	 */
 	public void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
@@ -450,6 +460,11 @@ public class Client {
 		return blockNum;
 	}
 	
+	/**
+	 * Checks if packet is an ErrorPacket
+	 * If it is, extract the error message and print it
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	private void checkError(DatagramPacket packet) {
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
@@ -513,6 +528,7 @@ public class Client {
 		try {
 			bytes = Files.readAllBytes(path);
 		} catch (NoSuchFileException fe) {
+			//file does not exist
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			sendErrorPacket(fileNotFound);
 			System.exit(1);

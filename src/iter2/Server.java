@@ -127,6 +127,11 @@ public class Server implements Runnable {
 		return rq;
 	}
 	
+	/**
+	 * Checks if packet is an ErrorPacket
+	 * If it is, extract the error message and print it
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	private void checkError(DatagramPacket packet) {
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
@@ -222,6 +227,11 @@ public class Server implements Runnable {
 		return bytes;
 	}
 	
+	
+	/**
+	 * Sends ErrorPacket to the client that sent receivePacket
+	 * @param error, ErrorPacket that will be sent
+	 */
 	public void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		

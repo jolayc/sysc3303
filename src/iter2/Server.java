@@ -1,6 +1,7 @@
 package iter2;
 
 import java.net.*;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -83,14 +84,20 @@ public class Server implements Runnable {
 					
 					path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 					try{
-					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
-					}catch(FileAlradyExistsException fe){
-						fe.printStackTrace();
-						DatagramPacket errorPacket= createErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+						f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+						
+						//For error checking purposes
+						Writer w = new Writer(f.getPath(), false);
+						w.close();
+					}catch(FileAlreadyExistsException fe){
+						ErrorPacket errorPacket= new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 						sendErrorPacket(errorPacket);
 						System.out.println("File already exists in Server folder.");
-						//System.exit(1);;
 						this.shutdown();
+						
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(1);
 					}
 					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
 				}

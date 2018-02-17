@@ -77,6 +77,17 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		
+		try {
+			File f = new File(relativePath + "\\Client\\" + filename);
+			writer = new Writer(f.getPath(), false);
+		} catch (IOException e) {
+			ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
+			sendErrorPacket(diskFull);
+			System.out.println("Disk Space in client full.");
+			System.exit(1);;
+			this.shutdown();
+		}
 
 		//Process response from Server
 		while(true) {
@@ -158,6 +169,17 @@ public class Client {
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
+		}
+		
+		try {
+			File f = new File(relativePath + "\\Client\\" + filename);
+			writer = new Writer(f.getPath(), false);
+		} catch (IOException e) {
+			ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
+			sendErrorPacket(diskFull);
+			System.out.println("Disk Space in client full.");
+			System.exit(1);;
+			this.shutdown();
 		}
 		
 		// Process response from Server

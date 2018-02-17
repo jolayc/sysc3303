@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 import java.io.File;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -81,6 +82,12 @@ public class Client {
 		try {
 			File f = new File(relativePath + "\\Client\\" + filename);
 			writer = new Writer(f.getPath(), false);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
+			this.shutdown();
 		} catch (IOException e) {
 			ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
 			sendErrorPacket(diskFull);
@@ -160,6 +167,12 @@ public class Client {
 		try { 
 			File f = new File(relativePath + "\\Client\\" + filename);
 			writer = new Writer(f.getPath(), false);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
+			this.shutdown();
 		} catch (FileAlreadyExistsException fe) {
 			ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 			sendErrorPacket(fileExists);
@@ -174,6 +187,12 @@ public class Client {
 		try {
 			File f = new File(relativePath + "\\Client\\" + filename);
 			writer = new Writer(f.getPath(), false);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
+			this.shutdown();
 		} catch (IOException e) {
 			//Disk space is full
 			
@@ -214,6 +233,12 @@ public class Client {
 					cleanedData[i] = receivePacket.getData()[4+i];
 				}
 				writer.write(cleanedData);
+			} catch (AccessDeniedException e) {
+				ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+				sendErrorPacket(fileAccessDenied);
+				System.out.println("Access Violation.");
+				System.exit(1);
+				this.shutdown();
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -527,6 +552,12 @@ public class Client {
 		Path path = Paths.get(s);
 		try {
 			bytes = Files.readAllBytes(path);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
+			this.shutdown();
 		} catch (NoSuchFileException fe) {
 			//file does not exist
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);

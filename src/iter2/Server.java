@@ -3,6 +3,7 @@ package iter2;
 import java.net.*;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -89,6 +90,12 @@ public class Server implements Runnable {
 						//For error checking purposes
 						Writer w = new Writer(f.getPath(), false);
 						w.close();
+					} catch (AccessDeniedException e) {
+						ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+						sendErrorPacket(fileAccessDenied);
+						System.out.println("Access Violation.");
+						System.exit(1);
+						this.shutdown();
 					}catch(FileAlreadyExistsException fe){
 						ErrorPacket errorPacket= new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 						sendErrorPacket(errorPacket);
@@ -216,6 +223,12 @@ public class Server implements Runnable {
 		// Try to convert File into byte[]
 		try {
 			bytes = Files.readAllBytes(path);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
+			this.shutdown();
 		} catch (NoSuchFileException fe) {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			sendErrorPacket(fileNotFound);

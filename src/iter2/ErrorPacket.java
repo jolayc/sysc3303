@@ -1,11 +1,11 @@
 package iter2;
 
-public class ErrorPacket {
+public class ErrorPacket{
 	
 	private final byte ZERO = 0x00;
 	private final byte FIVE = 0x05;
 	
-	private byte[] errorPacket;
+	private byte[] errorPacket = new byte[100];
 	
 	public ErrorPacket(ErrorCode code) {
 		createErrorPacket(code);
@@ -23,5 +23,13 @@ public class ErrorPacket {
 			errorPacket[4+i] = message[i];
 			if(i == message.length-1) errorPacket[4+i+1] = ZERO;
 		}
+	}
+	
+	public byte[] getBytes() {
+		return errorPacket;
+	}
+	
+	public int length() {
+		return errorPacket.length;
 	}
 }

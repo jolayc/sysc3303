@@ -5,7 +5,6 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -66,6 +65,9 @@ public class Client {
 		blockNum[0] = 0;
 		blockNum[1] = 0;
 
+		// Prompt user to provide path of file and convert to byte[]
+		fileAsBytes = toBytes(filename);
+		
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		printSend(writeRequest);
@@ -75,9 +77,6 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-
-		// Prompt user to provide path of file and convert to byte[]
-		fileAsBytes = toBytes(filename);
 
 		//Process response from Server
 		while(true) {
@@ -171,6 +170,8 @@ public class Client {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
+			checkError(receivePacket);
 			// Check block number received
 			
 			// Print contents
@@ -395,6 +396,18 @@ public class Client {
 		return new DatagramPacket(block, block.length);
 	}
 	
+	public void sendErrorPacket(ErrorPacket error) {
+		DatagramPacket errorPacket;
+		try {
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), 23);
+			sendReceiveSocket.send(errorPacket);
+		} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+		}
+	}
+	
+	
 	/**
 	 * Calculates the current block number
 	 * @return int[] which is the current block number
@@ -411,6 +424,18 @@ public class Client {
 		}
 		
 		return blockNum;
+	}
+	
+	private void checkError(DatagramPacket packet) {
+		if(packet.getData()[1] == 5) {
+			byte[] message = new byte[packet.getData().length - 5];
+			for(int i = 0; i < message.length; i++) {
+				if(packet.getData()[4+i] == 0) break;
+				message[i] = packet.getData()[4+i];
+			}
+			System.out.println("Error! " + new String(message,0,message.length));
+			shutdown();
+		}
 	}
 
 	/**
@@ -464,8 +489,9 @@ public class Client {
 		try {
 			bytes = Files.readAllBytes(path);
 		} catch (NoSuchFileException fe) {
-			// File not found
-		    
+			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
+			sendErrorPacket(fileNotFound);
+			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

@@ -2,6 +2,7 @@ package iter2;
 
 import java.net.*;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.File;
@@ -64,6 +65,8 @@ public class Server implements Runnable {
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
+			
+			checkError(receivePacket);
 				
 			if(!((rq.equals(read))||(rq.equals(write)))){
 				// might need to be fixed here
@@ -77,6 +80,7 @@ public class Server implements Runnable {
 				}
 				
 				if(rq.equals(write)) {
+					
 					path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
 					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
@@ -105,6 +109,18 @@ public class Server implements Runnable {
 		if(data[1] == ONE) rq = read;
 		else rq = write;
 		return rq;
+	}
+	
+	private void checkError(DatagramPacket packet) {
+		if(packet.getData()[1] == 5) {
+			byte[] message = new byte[packet.getData().length - 5];
+			for(int i = 0; i < message.length; i++) {
+				if(packet.getData()[4+i] == 0) break;
+				message[i] = packet.getData()[4+i];
+			}
+			System.out.println("Error! " + new String(message,0,message.length));
+			shutdown();
+		}
 	}
 	
 	// this method needs to be improved ***
@@ -175,14 +191,13 @@ public class Server implements Runnable {
 	
 	private byte[] toBytes(String p) {
 		byte[] bytes = null;
-		System.out.println(p);
 		Path path = Paths.get(p);
 		// Try to convert File into byte[]
 		try {
 			bytes = Files.readAllBytes(path);
-		} catch (FileNotFoundException fe) {
-			// File not found
-			fe.printStackTrace();
+		} catch (NoSuchFileException fe) {
+			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
+			sendErrorPacket(fileNotFound);
 			System.exit(1);
 		} catch (IOException e) {
 			System.exit(1);
@@ -190,6 +205,21 @@ public class Server implements Runnable {
 		// return file as bytes
 		return bytes;
 	}
+	
+	public void sendErrorPacket(ErrorPacket error) {
+		DatagramPacket errorPacket;
+		
+		try {
+			DatagramSocket sendSocket = new DatagramSocket();
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), receivePacket.getPort());
+			sendSocket.send(errorPacket);
+			sendSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
 	/**
 	 * increments block number 
 	 * @return block number as array on integers

@@ -82,7 +82,16 @@ public class Server implements Runnable {
 				if(rq.equals(write)) {
 					
 					path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
+					try{
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+					}catch(FileAlradyExistsException fe){
+						fe.printStackTrace();
+						DatagramPacket errorPacket= createErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+						sendErrorPacket(errorPacket);
+						System.out.println("File already exists in Server folder.");
+						//System.exit(1);;
+						this.shutdown();
+					}
 					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
 				}
 				

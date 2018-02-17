@@ -151,8 +151,11 @@ public class Client {
 			writer = new Writer(f.getPath(), false);
 		} catch (FileAlreadyExistsException fe) {
 			fe.printStackTrace();
+			DatagramPacket errorPacket= createErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+			sendErrorPacket(errorPacket);
 			System.out.println("File already exists in Client folder.");
-			System.exit(1);;
+			//System.exit(1);;
+			this.shutdown();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

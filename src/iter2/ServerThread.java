@@ -1,6 +1,7 @@
 package iter2;
 import java.net.*;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.AccessDeniedException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -83,6 +84,11 @@ public class ServerThread extends Thread implements Runnable {
 			// port as receivePacket
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			} catch (AccessDeniedException e) {
+				ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+				sendErrorPacket(fileAccessDenied);
+				System.out.println("Access Violation.");
+				System.exit(1);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -106,6 +112,11 @@ public class ServerThread extends Thread implements Runnable {
 			response = createACKPacket();
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			} catch (AccessDeniedException e) {
+				ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+				sendErrorPacket(fileAccessDenied);
+				System.out.println("Access Violation.");
+				System.exit(1);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -131,6 +142,11 @@ public class ServerThread extends Thread implements Runnable {
 				cleanedData[i] = data[4+i];
 			}
 			writer.write(cleanedData);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

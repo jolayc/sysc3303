@@ -18,6 +18,7 @@ public class ErrorSimulator {
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
 	private static ErrorType type;
 	private static PacketType packet;
+	private static int packetNumber;
 	private static int delay;
 	
 	/**
@@ -201,8 +202,24 @@ public class ErrorSimulator {
 			else System.out.println("ErrorSim: Invalid request entered");
 		}
 		
+		
+		if(packet.ordinal() == 2 || packet.ordinal() == 3) {
+			if(packet.ordinal() == 2 ) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
+			else System.out.println("ErrorSim: Enter the ACK packet that will be affected: ");
+			
+			boolean positive = false;
+			while(!positive) {
+				while(!sc.hasNextInt()) sc.next();
+				if(sc.nextInt() > 0) {
+					packetNumber = sc.nextInt();
+					positive = true;
+				}
+				else System.out.println("ErrorSim: Number must be greater than 0");
+			}
+		}
+		
 		if(type.ordinal() == 2 || type.ordinal() == 3) {//delay packet or duplicate packet
-			System.out.println("ErrorSim: How long will the delay or space between duplicates be, in seconds: ");
+			System.out.println("ErrorSim: Enter the delay or space between duplicates be, in seconds: ");
 			while(!sc.hasNextInt()) sc.next();
 			int delay = 1000 * sc.nextInt();
 		}

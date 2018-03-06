@@ -1,4 +1,5 @@
 package iter2;
+import java.awt.Window.Type;
 /**
  * Error Simulator of a client/server TFTP application
  * The Error Simulator receives a request packet from a client and then
@@ -8,12 +9,16 @@ package iter2;
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+import java.util.Scanner;
 
 
 public class ErrorSimulator {
 	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
+	private static ErrorType type;
+	private static PacketType packet;
+	private static int delay;
 	
 	/**
 	 * Constructor for host
@@ -169,9 +174,82 @@ public class ErrorSimulator {
 	}
 	
 	public static void main(String args[]){
-		
 		ErrorSimulator sim = new ErrorSimulator();
+		Scanner sc = new Scanner(System.in);
+		boolean validType = false;
+		boolean validPacket = false;
+		
+		while(!validType) {
+			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet.");
+			while(!sc.hasNextInt()) sc.next();
+			int errorType = sc.nextInt();
+			if(errorType >= 0 && errorType <= 3) {//if errorType is a valid ordinal for PacketType
+				type = ErrorType.getErrorType(errorType);
+				validType = true;
+			}
+			else System.out.println("ErrorSim: Invalid type entered");
+		}
+		while(!validPacket) {
+			System.out.println("ErrorSim: Enter 0 for RRQ, 1 for WRQ, 2 for DATA, 3 for ACK");
+			while(!sc.hasNextInt()) sc.next();
+			
+			int packetType = sc.nextInt();
+			if(packetType >= 0 && packetType <= 3) {//if packetType is a valid ordinal for PacketType
+				packet = PacketType.getPacketType(packetType);
+				validPacket = true;
+			}
+			else System.out.println("ErrorSim: Invalid request entered");
+		}
+		
+		if(type.ordinal() == 2 || type.ordinal() == 3) {//delay packet or duplicate packet
+			System.out.println("ErrorSim: How long will the delay or space between duplicates be, in seconds: ");
+			while(!sc.hasNextInt()) sc.next();
+			int delay = 1000 * sc.nextInt();
+		}
+	
 		sim.receiveAndSend();
+	}
+	
+	public enum ErrorType{
+		
+		NORMAL_OPERATION(0),
+		LOSE_PACKET(1),
+		DELAY_PACKET(2),
+		DUPLICATE_PACKET(3);
+		private int type;
+		
+		ErrorType(int type){
+			this.type = type;
+		}
+		
+		static ErrorType getErrorType(int type) throws IllegalArgumentException {
+			if(type == 0) return NORMAL_OPERATION;
+			if(type == 1) return LOSE_PACKET;
+			if(type == 2) return DELAY_PACKET;
+			if(type == 3) return DUPLICATE_PACKET;
+			else throw new IllegalArgumentException("Invalid type");
+		}
+	}
+	
+	public enum PacketType{
+		
+		RRQ(0),
+		WRQ(1),
+		DATA(2),
+		ACK(3);
+		private int packet;
+		
+		PacketType(int packet){
+			this.packet = packet;
+		}
+		
+		static PacketType getPacketType(int packet) throws IllegalArgumentException {
+			if(packet == 0) return RRQ;
+			if(packet == 1) return WRQ;
+			if(packet == 2) return DATA;
+			if(packet == 3) return ACK;
+			else throw new IllegalArgumentException("Invalid request");
+		}
 	}
 
 }

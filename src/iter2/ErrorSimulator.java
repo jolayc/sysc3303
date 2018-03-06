@@ -14,6 +14,12 @@ import java.util.Scanner;
 
 public class ErrorSimulator {
 	
+	private final byte ZERO = 0;
+	private final byte ONE = 1;
+	private final byte TWO = 2;
+	private final byte THREE = 3;
+	private final byte FOUR = 4;
+	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
 	private DatagramPacket simulatorPacket;
@@ -48,7 +54,7 @@ public class ErrorSimulator {
 	 * Sends the response to the client 
 	 */
 	public void receiveAndSend(){
-	
+		int count = 1;
 		//will repeat "forever"
 		while(true){
 			boolean stop = false;
@@ -63,12 +69,31 @@ public class ErrorSimulator {
 		    
 		    //waits until receiveSocket receives a datagram packet from the client
 		    receivePack(receiveSocket, receivePacket);
-		    
-		    if(receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0){
+		
+		    //if user requested error for data or ack
+		    if(receivePacket.getData()[1] == THREE && receivePacket.getData()[1] == FOUR) {
+		    	if(count == packetNumber) {
+		    		if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) simulatorPacket = receivePacket;
+		    		if(packet.name().equals("ACK") && receivePacket.getData()[1] == FOUR) simulatorPacket = receivePacket;
+		    	}
+		    	else count++;
+		    }
+		  
+		    if(receivePacket.getData()[1] == THREE && receivePacket.getData()[515] == ZERO){
 		    	stop = true;
 		    }
 		    
-		    //waits until receiveSocket receives a datagram packet from the client
+		    //if the user requested error for rrq
+		    if(receivePacket.getData()[1] == ONE && packet.name().equals("RRQ")) {
+		    	simulatorPacket = receivePacket;
+		    }
+		    
+		    //if the user requested error for wrq
+		    if(receivePacket.getData()[1] == TWO && packet.name().equals("WRQ")) {
+		    	simulatorPacket = receivePacket;
+		    }
+		    
+		    //creates packet to send to server from the packet sent from client
 		    try {
 				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), 69);
 			} catch (UnknownHostException e1) {
@@ -79,7 +104,6 @@ public class ErrorSimulator {
 		    //sends the sendReceivePacket to the intermediate host
 		    sendPack(sendReceiveSocket, sendReceivePacket);
 		    printSend(sendReceivePacket);
-		    
 		    if(!stop) {
 		    
 		    	//creates a datagram packet that will contain sendData that will be ported to port 69
@@ -91,7 +115,17 @@ public class ErrorSimulator {
 		    	}
 		    	
 		    	//waits until sendReceivePacket receives a datagram packet from the server
-		    	receivePack(sendReceiveSocket, sendReceivePacket);	   
+		    	receivePack(sendReceiveSocket, sendReceivePacket);	
+		    	
+		    	//if the user requested error for data
+			    if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
+			    	if(count == packetNumber) simulatorPacket = receivePacket;
+			    }
+			    
+			  //if the user requested error for ack
+			    if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
+			    	if(count == packetNumber) simulatorPacket = receivePacket;
+			    }
 		    
 		    	//creates a datagram packet that will be ported to wherever receivePacket is ported to
 		    	sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
@@ -233,6 +267,7 @@ public class ErrorSimulator {
 		}
 	
 		sim.receiveAndSend();
+		sc.close();
 	}
 	
 	public enum ErrorType{

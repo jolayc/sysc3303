@@ -16,10 +16,12 @@ public class ErrorSimulator {
 	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
+	private DatagramPacket simulatorPacket;
 	private static ErrorType type;
 	private static PacketType packet;
 	private static int packetNumber;
 	private static int delay;
+	private static int duplicateOffset;
 	
 	/**
 	 * Constructor for host
@@ -203,7 +205,7 @@ public class ErrorSimulator {
 		}
 		
 		
-		if(packet.ordinal() == 2 || packet.ordinal() == 3) {
+		if(packet.ordinal() == 2 || packet.ordinal() == 3) {//to determine the nth. DATA or ACK packet
 			if(packet.ordinal() == 2 ) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
 			else System.out.println("ErrorSim: Enter the ACK packet that will be affected: ");
 			
@@ -218,10 +220,16 @@ public class ErrorSimulator {
 			}
 		}
 		
-		if(type.ordinal() == 2 || type.ordinal() == 3) {//delay packet or duplicate packet
-			System.out.println("ErrorSim: Enter the delay or space between duplicates be, in seconds: ");
+		if(type.ordinal() == 2) {//for delay packet
+			System.out.println("ErrorSim: Enter the delay, in seconds: ");
 			while(!sc.hasNextInt()) sc.next();
-			int delay = 1000 * sc.nextInt();
+			delay = 1000 * sc.nextInt();
+		}
+		
+		if(type.ordinal() == 3) {//for duplicate packet
+			System.out.println("ErrorSim: Enter the duplicate offsets: ");
+			while(!sc.hasNextInt()) sc.next();
+			duplicateOffset = sc.nextInt();
 		}
 	
 		sim.receiveAndSend();

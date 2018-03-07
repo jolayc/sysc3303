@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 
 public class ErrorSimulator {
@@ -41,6 +42,9 @@ public class ErrorSimulator {
 			
 			//Constructs a socket to send packets from any available port
 			sendReceiveSocket = new DatagramSocket();
+			
+			//Set timeout
+			//sendReceiveSocket.setSoTimeout(5000);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -80,7 +84,7 @@ public class ErrorSimulator {
 		    }
 		  
 		    if(receivePacket.getData()[1] == THREE && receivePacket.getData()[515] == ZERO){
-		    	stop = true;
+		    	break; //might need to fix this
 		    }
 		    
 		    //if the user requested error for rrq
@@ -104,8 +108,8 @@ public class ErrorSimulator {
 		    //sends the sendReceivePacket to the intermediate host
 		    sendPack(sendReceiveSocket, sendReceivePacket);
 		    printSend(sendReceivePacket);
-		    if(!stop) {
 		    
+		    if(!simulateError()) {
 		    	//creates a datagram packet that will contain sendData that will be ported to port 69
 		    	try {
 		    		sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), 69);
@@ -119,12 +123,16 @@ public class ErrorSimulator {
 		    	
 		    	//if the user requested error for data
 			    if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
-			    	if(count == packetNumber) simulatorPacket = receivePacket;
+			    	if(count == packetNumber) {
+			    		simulatorPacket = receivePacket;
+			    	}
 			    }
 			    
-			  //if the user requested error for ack
+			    //if the user requested error for ack
 			    if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
-			    	if(count == packetNumber) simulatorPacket = receivePacket;
+			    	if(count == packetNumber) {
+			    		simulatorPacket = receivePacket;
+			    	}
 			    }
 		    
 		    	//creates a datagram packet that will be ported to wherever receivePacket is ported to
@@ -137,12 +145,69 @@ public class ErrorSimulator {
 	}
 	
 	/**
+	 * A method used to check if an error is being simulated
+	 * @return	true if an error has been simulated, false otherwise
+	 */
+	private boolean simulateError() {
+		if(type.name().equals("LOSE_PACKET")) {
+			return simulateLosePacket();
+		} else if(type.name().equals("DUPLICATE_PACKET")) {
+			return simulateDuplicatePacket();
+		} else if(type.name().equals("DELAY_PACKET")) {
+			return simulateDelayPacket();
+		} else { // normal operation
+			return false;
+		}
+	}
+	
+	/**
+	 * A method that simulates a packet loss,
+	 * this method checks the packets received
+	 * and throws away the requested packet
+	 */
+	private boolean simulateLosePacket() {
+		System.out.println("ErrorSim: Dropping packet...");
+		//Don't send the packet/Do nothing
+		return true;
+	}
+	
+	/**
+	 * A method that simulates a packet delay,
+	 * this method delays sending a packet by
+	 * a specified amount of time
+	 */
+	private boolean simulateDelayPacket() {
+		System.out.println("ErrorSim: Delaying packet...");
+		try {
+			TimeUnit.SECONDS.sleep(delay);
+			sendReceiveSocket.send(simulatorPacket);
+		} catch (InterruptedException ie) {
+			// sleep interrupted
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		return true;
+	}
+	
+	/**
+	 * A method that simulates a duplicate packet,
+	 * this method sends a duplicate packet depending
+	 * on the specified space
+	 */
+	private boolean simulateDuplicatePacket() {
+		System.out.println("ErrorSim: Duplicating packet...");
+		// TO-DO
+		return true;
+	}
+	
+	/**
 	 * Sends a packet to a socket
 	 * @param socket, DatagramSocket where the packet will be sent
 	 * @param packet, DatagramPacket that will be sent
 	 */
 	public void sendPack(DatagramSocket socket, DatagramPacket packet) {
-		
+	
 		try{
 			 socket.send(packet);
 		 }
@@ -265,12 +330,12 @@ public class ErrorSimulator {
 			while(!sc.hasNextInt()) sc.next();
 			duplicateOffset = sc.nextInt();
 		}
-	
+		System.out.println("ErrorSim: Running...");
 		sim.receiveAndSend();
 		sc.close();
 	}
 	
-	public enum ErrorType{
+	public enum ErrorType {
 		
 		NORMAL_OPERATION(0),
 		LOSE_PACKET(1),
@@ -291,7 +356,7 @@ public class ErrorSimulator {
 		}
 	}
 	
-	public enum PacketType{
+	public enum PacketType {
 		
 		RRQ(0),
 		WRQ(1),

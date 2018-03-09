@@ -541,8 +541,18 @@ public class Client {
 	public static void main(String args[]){
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
+		String mode;
+		boolean modeSelected = false;
 		
 		while (true) {
+			while(!modeSelected) {
+				System.out.println("Client: Enter q for 'quiet' mode or v for 'verbose'");
+				while(!sc.hasNext()) sc.next();
+				mode = sc.nextLine();
+				if(mode.equals("q") || mode.equals("v")) {
+					modeSelected = true;
+				}
+			}
 			System.out.println("Client: Enter file name or 'exit' to terminate.");
 			String in = sc.nextLine().toLowerCase();
 			if (in.equals("exit")) break;

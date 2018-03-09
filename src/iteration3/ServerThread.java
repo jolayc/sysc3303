@@ -56,7 +56,7 @@ public class ServerThread extends Thread implements Runnable {
 		// response packet
 		byte[] response = new byte[512 + 4];
 		// status flag
-		boolean finished = false;
+		//boolean finished = false;
 		
 		// construct socket for sending and receiving
 		try {
@@ -66,54 +66,56 @@ public class ServerThread extends Thread implements Runnable {
 			System.exit(1);
 		}
 		
-		while(!finished) {
-			// save data of packet received
+		// process request/data etc.
+		while(true) {
+			// save packet received as data
 			byte data[] = receivePacket.getData();
 			
-			// check if finished
-			
-				break;
-			} else {
+			if (message.equals(read)) {
+				// respond to REQ
+				response = createDataPacket();
+				if (response[5] == 0) {
+					break;
+				}
 				try {
-					if(data[1] == (byte)3) {
-						handleData(data);
-					}
+					sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+					sendReceiveSocket.send(sendPacket);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
 				}
-			}
-			
-			// process read
-			if (message.equals(read)) {
-				// create data packet to respond to read request
-				response = createDataPacket();
-				if (response[5] == 0) {
-					finished = true;
-					break;
+			} else if (message.equals(write)) {
+				// respond to REQ
+				if (data[1] == (byte)2) {
+					response = createACKPacket();
+					try {
+						sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+						sendReceiveSocket.send(sendPacket);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(1);
+					} 
 				}
-			}
-			
-			//process write
-			if (message.equals(write)) {
-				// create ACK packet to respond to write request
-				response = createACKPacket();
-			}
-			
-			// send response packet
-			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-			
-			// receive next packet and save it
-			try {
-				sendReceiveSocket.receive(receivePacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+				// respond to DATA
+				else if (data[1] == (byte)3) {
+					if(data[5] == 0) {
+						break;
+					} else {
+						try {
+							handleData(data);
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+						try {
+							sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+							sendReceiveSocket.send(sendPacket);
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					}
+				}
 			}
 		}
 	}

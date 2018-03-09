@@ -38,6 +38,7 @@ public class Server implements Runnable {
 	
 	private int[] blockNumber;
 
+
 	private File f;
 	
 	/**
@@ -66,6 +67,8 @@ public class Server implements Runnable {
 			// Wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
+			
+			
 			
 			checkError(receivePacket);
 				
@@ -105,11 +108,21 @@ public class Server implements Runnable {
 			}
 			else if(rq.equals(read)){
 				calcBlockNumber();
-				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
+				if(getBlockIntegerValue(blockNumber[0], blockNumber[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+					receivePacket = new DatagramPacket(data, data.length);
+					receivePack(receiveSocket, receivePacket);
+				}else {
+					new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
+				}
 			}
 			else if(rq.equals(write)){
 				calcBlockNumber();
-				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
+				if(getBlockIntegerValue(blockNumber[0], blockNumber[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+					receivePacket = new DatagramPacket(data, data.length);
+					receivePack(receiveSocket, receivePacket);
+				}else {
+					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
+				}
 			}
 		}
 		shutdown();
@@ -252,6 +265,10 @@ public class Server implements Runnable {
 		}
 
 		return blockNumber;
+	}
+	
+	private int getBlockIntegerValue(int a, int b) {
+		return (a*10) + b;
 	}
 	
 	/**

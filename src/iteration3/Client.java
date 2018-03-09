@@ -94,6 +94,10 @@ public class Client {
 				System.exit(1);
 			}
 			calcBlockNumber();
+			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+				receivePacket = new DatagramPacket(serverACK, serverACK.length);
+				receivePack(sendReceiveSocket, receivePacket);
+			}
 
 			// Send a DATA Block to write
 			byte[] dataBlock = createDataPacket();
@@ -224,6 +228,11 @@ public class Client {
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
+			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+				receivePacket = new DatagramPacket(incomingData, incomingData.length);
+				receivePack(sendReceiveSocket, receivePacket);
+			}
+			
 			
 			try {
 				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), 23);
@@ -453,6 +462,10 @@ public class Client {
 		}
 		
 		return blockNum;
+	}
+	
+	private int getBlockIntegerValue(int a, int b) {
+		return (a*10) + b;
 	}
 	
 	private void checkError(DatagramPacket packet) {

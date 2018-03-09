@@ -264,7 +264,7 @@ public class Client {
 		data[3] = (byte)blockNum[1];
 		
 		int multiplier = 0;
-		if(blockNum[1] > 1) multiplier += blockNum[1];
+		if(blockNum[1] > 1) multiplier += blockNum[1]-1;
 		if(blockNum[0] > 0) multiplier += (10*blockNum[0]);
 	
 

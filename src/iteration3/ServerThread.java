@@ -28,6 +28,8 @@ public class ServerThread extends Thread implements Runnable {
 	private byte[] path;
 	private int[] blockNum;
 	
+	private boolean done = false;
+	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
@@ -55,8 +57,6 @@ public class ServerThread extends Thread implements Runnable {
 	public void run() {
 		// response packet
 		byte[] response = new byte[512 + 4];
-		// status flag
-		//boolean finished = false;
 		
 		// construct socket for sending and receiving
 		try {
@@ -67,7 +67,8 @@ public class ServerThread extends Thread implements Runnable {
 		}
 		
 		// process request/data etc.
-		while(true) {
+		while(!done) {
+			
 			// save packet received as data
 			byte data[] = receivePacket.getData();
 			
@@ -75,11 +76,14 @@ public class ServerThread extends Thread implements Runnable {
 				// respond to REQ
 				response = createDataPacket();
 				if (response[5] == 0) {
+					System.out.println(Arrays.toString(path));
 					break;
 				}
 				try {
+					
 					sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 					sendReceiveSocket.send(sendPacket);
+					done = true;
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
@@ -91,6 +95,7 @@ public class ServerThread extends Thread implements Runnable {
 					try {
 						sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 						sendReceiveSocket.send(sendPacket);
+						done = true;
 					} catch (IOException e) {
 						e.printStackTrace();
 						System.exit(1);
@@ -110,6 +115,7 @@ public class ServerThread extends Thread implements Runnable {
 						try {
 							sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 							sendReceiveSocket.send(sendPacket);
+							done = true;
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
@@ -146,40 +152,6 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	
 	/**
-	 * Sends a packet to a socket
-	 * @param socket, DatagramSocket where the packet will be sent
-	 * @param packet, DatagramPacket that will be sent
-	 */
-	private void sendPack(DatagramSocket sock, DatagramPacket dp) {
-		printSend(dp);
-		try {
-			sock.send(dp);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
-	
-	/**
-	 * Calculates the current block number
-	 * @return int[] which is the current block number
-	 */
-	private int[] calcBlockNumber(){
-
-		//if block number needs another ten value
-		if(blockNum[1] == 9) {
-			blockNum[0]++;
-			blockNum[1] = 0;
-		}
-		else{
-			blockNum[1]++;
-		}
-		
-		return blockNum;
-	}
-	
-	/**
 	 * Create a data packet
 	 * @return byte[516] data packet
 	 */
@@ -191,10 +163,10 @@ public class ServerThread extends Thread implements Runnable {
 		data[3] = (byte)blockNumber[1];
 		
 		int multiplier = 0;
-		if(blockNumber[1] > 1) multiplier += blockNumber[1];
+		if(blockNumber[1] > 1) multiplier += blockNumber[1]-1;
 		if(blockNumber[0] > 0) multiplier += (10*blockNumber[0]);
 
-		
+	
 		for(int i = 0; i < path.length; i++){
 			if(path.length <= (512*multiplier+i)) break;
 			if((path.length > (512*multiplier+i)) && i < 512){

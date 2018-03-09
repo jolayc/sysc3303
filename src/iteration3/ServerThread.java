@@ -49,73 +49,74 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	/**
 	 * Run handles the packets received from the host. 
+	 * Request is processed by the Server but the DATA and ACK
+	 * packets are handled by the Thread
 	 */
 	public void run() {
-		byte response[] = new byte[512+4];
-		// create response packet
-		// send data packet when receiving a read request
-		if (message.equals(read)) {
-			response = createDataPacket();
-			if(response[5] == 0){
-				return;
-			}
-		}
-
-		// send a acknowledge packet when receiving a write request or data packet
-		else if(message.equals(write)){
-			response = createACKPacket();
-		}
+		// response packet
+		byte[] response = new byte[512 + 4];
+		// status flag
+		boolean finished = false;
 		
-		// Construct a socket to send packets to any available port
+		// construct socket for sending and receiving
 		try {
 			sendReceiveSocket = new DatagramSocket();
 		} catch (SocketException e1) {
 			e1.printStackTrace();
 			System.exit(1);
 		}
-
-		if (message.equals(read)) {
-			response = createDataPacket();
-			if(response[5] == 0) {
-				return;
+		
+		while(!finished) {
+			// save data of packet received
+			byte data[] = receivePacket.getData();
+			
+			// check if finished
+			
+				break;
+			} else {
+				try {
+					if(data[1] == (byte)3) {
+						handleData(data);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 			}
-			// create a datagram packet that will contain sendBytes that will be ported to the same
-			// port as receivePacket
-			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-			sendPack(sendReceiveSocket, sendPacket);
-		}
-		if (message.equals(write)) {
-			byte[] data = receivePacket.getData();
-			try {
-				switch(data[1]) {
-				case (byte)3:
-					// Handle Data packet received
-					handleData(data);
-				default:
+			
+			// process read
+			if (message.equals(read)) {
+				// create data packet to respond to read request
+				response = createDataPacket();
+				if (response[5] == 0) {
+					finished = true;
 					break;
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
 			}
-			response = createACKPacket();
+			
+			//process write
+			if (message.equals(write)) {
+				// create ACK packet to respond to write request
+				response = createACKPacket();
+			}
+			
+			// send response packet
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			sendPack(sendReceiveSocket, sendPacket);
+			
+			// receive next packet and save it
+			try {
+				sendReceiveSocket.receive(receivePacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
-		sendReceiveSocket.close();
 	}
-	
-	
 
 	/**
 	 * Creates a file (on machine) with requested file name to be written to

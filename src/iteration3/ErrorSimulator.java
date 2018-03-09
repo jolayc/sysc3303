@@ -279,6 +279,12 @@ public class ErrorSimulator {
 			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet.");
 			while(!sc.hasNextInt()) sc.next();
 			int errorType = sc.nextInt();
+			if(errorType == 0) {
+				type = ErrorType.getErrorType(0);
+				validType = true;
+				validPacket = true;
+				packet = PacketType.getPacketType(0);
+			}
 			if(errorType >= 0 && errorType <= 3) {//if errorType is a valid ordinal for PacketType
 				type = ErrorType.getErrorType(errorType);
 				validType = true;

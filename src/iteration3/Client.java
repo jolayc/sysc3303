@@ -31,6 +31,8 @@ public class Client {
 	
 	private byte[] fileAsBytes;
 	
+	private boolean verbose;
+	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
 	
@@ -116,9 +118,34 @@ public class Client {
 				len++;
 			}		
 			if(len < 512) {
+				sendEmptyDataPacket();
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
+		}
+	}
+	
+	/**
+	 * A method that sends an empty data packet at the end of a transfer
+	 */
+	private void sendEmptyDataPacket() {
+		byte[] data = new byte[516];
+		data[0] = 0;
+		data[1] = 3;
+		for (int i = 2; i < data.length; i++) {
+			data[i] = 0;
+		}
+		try {
+			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+			System.exit(1);
+		}
+		try {
+			sendReceiveSocket.send(sendPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	

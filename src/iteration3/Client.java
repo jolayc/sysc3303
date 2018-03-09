@@ -31,7 +31,7 @@ public class Client {
 	
 	private byte[] fileAsBytes;
 	
-	private boolean verbose;
+	private boolean mode;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -551,33 +551,38 @@ public class Client {
 		System.exit(1);
 	}
 	
+	private void setQuiet(boolean mode) {
+		this.mode = mode;	
+	}
+	
 	public static void main(String args[]){
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
-		String mode;
 		boolean modeSelected = false;
 		
 		while (true) {
 			while(!modeSelected) {
+				// Select quiet or verbose mode
 				System.out.println("Client: Enter q for 'quiet' mode or v for 'verbose'");
 				while(!sc.hasNext()) sc.next();
 				mode = sc.nextLine();
-				if(mode.equals("q") || mode.equals("v")) {
+				if(mode.equals("q")) {
+					c.setQuiet(true);
 					modeSelected = true;
-				}
+				} else if (mode.equals("v")) {
+					c.setMode(false);
+					modeSelected = true;
+				} else {}
 			}
+			
 			System.out.println("Client: Enter file name or 'exit' to terminate.");
 			String in = sc.nextLine().toLowerCase();
 			if (in.equals("exit")) break;
 			System.out.println("Client: Enter 'r' for read request or 'w' for write request");
 			String command = sc.nextLine().toLowerCase();
-			if (command.equals("r")) {
-				c.sendRead(in);
-			} else if (command.equals("w")) {
-				c.sendWrite(in);
-			} else {
-				System.out.println("Command not recognized.");
-			}
+			if (command.equals("r")) c.sendRead(in);
+			else if (command.equals("w")) c.sendWrite(in);
+			else System.out.println("Client: Command not recognized.");
 		}
 		sc.close();
 		c.shutdown();

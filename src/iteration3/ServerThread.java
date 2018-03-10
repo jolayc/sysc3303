@@ -27,14 +27,13 @@ public class ServerThread extends Thread implements Runnable {
 	
 	private byte[] path;
 	private int[] blockNum;
-	private int numberOfTimeout=0;
+	
 	private boolean done = false;
 	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x04;
-	private final int timeoutTime= 1*1000; //number of seconds* ms conversion
 	/**
 	 * Constructor for ServerThread
 	 * @param receivePacket packet received from host
@@ -58,7 +57,6 @@ public class ServerThread extends Thread implements Runnable {
 	public void run() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(timeoutTime);
 		} catch (SocketException e1) { 
 			e1.printStackTrace();
 			System.exit(1);
@@ -96,21 +94,9 @@ public class ServerThread extends Thread implements Runnable {
 			// receive packet from Client
 			try { 
 				sendReceiveSocket.receive(receivePacket);
-			} catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				if (numberOfTimeout==6){
-					try {
-						sendReceiveSocket.send(sendPacket);
-						numberOfTimeout=0;
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
-				}
-			}
-			catch(IOException e) {
-			e.printStackTrace();
-			System.exit(1);
+			} catch(IOException e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
 			try {
 				handleData(receivePacket.getData());
@@ -149,81 +135,7 @@ public class ServerThread extends Thread implements Runnable {
 	
 	private void handleRead() {
 		// response packet
-			byte[] data = new byte[512 + 4];
-			byte[] response;
-				
-			// send DATA to read request
-			data = createDataPacket();
-			try {
-				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), receivePacket.getPort());
-			} catch (UnknownHostException ue) {
-				ue.printStackTrace();
-				System.exit(1);
-			}
-			try {
-				sendReceiveSocket.send(sendPacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-				
-			// process ACK packets
-			while (true) {
-				response = new byte[512 + 4];
-				receivePacket = new DatagramPacket(response, response.length);
-				// receive packet from Client
-				try { 
-					sendReceiveSocket.receive(receivePacket);
-				} catch (SocketTimeoutException se){
-					numberOfTimeout++;
-					if (numberOfTimeout==6){
-						try {
-							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
-				catch(IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-				}
-				try {
-					handleData(receivePacket.getData());
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-				// create DATA packet after receiving ACK packet
-				data = createDataPacket();
-				blockNum = calcBlockNumber();
-				try {
-					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
-				} catch (UnknownHostException ue) {
-					ue.printStackTrace();
-					System.exit(1);
-				}
-				try {
-					sendReceiveSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}					
-				// check if end of write
-				int len = 0;
-				for(byte b: response){
-					if(b == 0 && len > 4) break;
-					len++;
-				}
-					
-				if(len < 512) {
-					break;
-						
-				}
-			sendReceiveSocket.close();
-			}
+		byte[] response = new byte[512 + 4];
 	}
 
 	/**

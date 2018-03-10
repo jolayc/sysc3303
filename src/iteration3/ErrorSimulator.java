@@ -145,10 +145,16 @@ public class ErrorSimulator {
 	} 
 	
 	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
+		findPacket();
+		DatagramPacket duplicate = simulatorPacket;
+		
+		packetNumber = duplicateOffset - packetNumber;
+		findPacket();
+		
 		if(data[1] == THREE && packet.name().equals("DATA")) {
 			System.out.println("ErrorSim: Sending a duplicate packet...");
 			try {
-				socket.send(simulatorPacket);
+				socket.send(duplicate);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -157,7 +163,7 @@ public class ErrorSimulator {
 		if(data[1] == FOUR && packet.name().equals("ACK")) {
 			System.out.println("ErrorSim: Sending a duplicate packet...");
 			try {
-				socket.send(simulatorPacket);
+				socket.send(duplicate);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);

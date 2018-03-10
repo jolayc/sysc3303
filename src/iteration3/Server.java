@@ -62,71 +62,41 @@ public class Server implements Runnable {
 	 * Runs the server
 	 */
 	public void run() {
-		while (!receiveSocket.isClosed()) {
-			byte[] data = new byte[4 + 512];
-			// Wait on port 69
+		while(!receiveSocket.isClosed()) {
+			byte[] data = new byte[512 + 4];
+			// wait on port 69
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
-			
-			
-			
 			checkError(receivePacket);
-				
-			if(!((rq.equals(read))||(rq.equals(write)))){
-				// might need to be fixed here
-				rq = checkReadWrite(receivePacket.getData());
-				
-				if(rq.equals(read)){
-					path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
-					blockNumber[0] = 0;
-					blockNumber[1] = 1;
-					new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
-				}
-				
-				if(rq.equals(write)) {
+			rq = checkReadWrite(receivePacket.getData());
+			if (rq.equals(read)) {
+				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
+				blockNumber[0] = 0;
+				blockNumber[1] = 1;
+				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
+			} else if (rq.equals(write)) {
+				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
+				try {
+					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
 					
-					path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
-					try{
-						f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
-						
-						//For error checking purposes
-						Writer w = new Writer(f.getPath(), false);
-						w.close();
-					}catch(FileAlreadyExistsException fe){
-						ErrorPacket errorPacket= new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
-						sendErrorPacket(errorPacket);
-						System.out.println("File already exists in Server folder.");
-						this.shutdown();
-						
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
-					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
+					// for error checking
+					Writer w = new Writer(f.getPath(), false);
+					w.close();
+				} catch (FileAlreadyExistsException fe) {
+					ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+					sendErrorPacket(errorPacket);
+					System.out.println("Server: Requested file already exists on machine!");
+					shutdown();
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
 				}
-				
-			}
-			else if(rq.equals(read)){
-				calcBlockNumber();
-				if(getBlockIntegerValue(blockNumber[0], blockNumber[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
-					receivePacket = new DatagramPacket(data, data.length);
-					receivePack(receiveSocket, receivePacket);
-				}else {
-					new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
-				}
-			}
-			else if(rq.equals(write)){
-				calcBlockNumber();
-				if(getBlockIntegerValue(blockNumber[0], blockNumber[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
-					receivePacket = new DatagramPacket(data, data.length);
-					receivePack(receiveSocket, receivePacket);
-				}else {
-					new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
-				}
+				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
 			}
 		}
 		shutdown();
 	}
+	
 	
 	/**
 	 * Checks if the packet received is a read or write request

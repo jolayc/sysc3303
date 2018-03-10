@@ -55,75 +55,86 @@ public class ServerThread extends Thread implements Runnable {
 	 * packets are handled by the Thread
 	 */
 	public void run() {
-		// response packet
-		byte[] response = new byte[512 + 4];
-		
-		// construct socket for sending and receiving
 		try {
 			sendReceiveSocket = new DatagramSocket();
-		} catch (SocketException e1) {
+		} catch (SocketException e1) { 
 			e1.printStackTrace();
 			System.exit(1);
 		}
 		
-		// process request/data etc.
-		while(!done) {
+		byte[] data =  receivePacket.getData();
+		if (data[0] == 0 && data[1] == 1) handleRead(); // read request
+		else if (data[0] == 0 && data[1] == 2) handleWrite(); // write request
+	}
+	
+	private void handleWrite() {
+		// response packet
+		byte[] response = new byte[512 + 4];
+		byte[] data;
+		
+		// send ACK to write request
+		response = createACKPacket();
+		try {
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+		} catch (UnknownHostException ue) {
+			ue.printStackTrace();
+			System.exit(1);
+		}
+		try {
+			sendReceiveSocket.send(sendPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		// process DATA packets
+		while (true) {
+			data = new byte[512 + 4];
+			receivePacket = new DatagramPacket(data, data.length);
+			// receive packet from Client
+			try { 
+				sendReceiveSocket.receive(receivePacket);
+			} catch(IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			try {
+				handleData(receivePacket.getData());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			// create ACK packet to acknowledge DATA packet
+			response = createACKPacket();
+			blockNum = calcBlockNumber();
+			try {
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
+			} catch (UnknownHostException ue) {
+				ue.printStackTrace();
+				System.exit(1);
+			}
+			try {
+				sendReceiveSocket.send(sendPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			// check if end of write
+			int len = 0;
+			for(byte b: data){
+				if(b == 0 && len > 4) break;
+				len++;
+			}
 			
-			// save packet received as data
-			byte data[] = receivePacket.getData();
-			
-			if (message.equals(read)) {
-				// respond to REQ
-				response = createDataPacket();
-				if (response[5] == 0) {
-					System.out.println(Arrays.toString(path));
-					break;
-				}
-				try {
-					
-					sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-					sendReceiveSocket.send(sendPacket);
-					done = true;
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-			} else if (message.equals(write)) {
-				// respond to REQ
-				if (data[1] == (byte)2) {
-					response = createACKPacket();
-					try {
-						sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-						sendReceiveSocket.send(sendPacket);
-						done = true;
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-					} 
-				}
-				// respond to DATA
-				else if (data[1] == (byte)3) {
-					if(data[5] == 0) {
-						break;
-					} else {
-						try {
-							handleData(data);
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-						try {
-							sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
-							sendReceiveSocket.send(sendPacket);
-							done = true;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
+			if(len < 512) {
+				break;
 			}
 		}
+		sendReceiveSocket.close();
+	}
+	
+	private void handleRead() {
+		// response packet
 	}
 
 	/**
@@ -149,6 +160,25 @@ public class ServerThread extends Thread implements Runnable {
 			System.out.println("Server: File transfer/write complete.");
 
 		}
+	}
+	
+	
+	/**
+	 * increments block number 
+	 * @return block number as array on integers
+	 */
+	
+	private int[] calcBlockNumber(){
+
+		if(blockNumber[1] == 9) {
+			blockNumber[0]++;
+			blockNumber[1] = 0;
+		}
+		else{
+			blockNumber[1]++;
+		}
+
+		return blockNumber;
 	}
 	
 	/**

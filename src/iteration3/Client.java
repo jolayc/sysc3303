@@ -559,6 +559,7 @@ public class Client {
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
 		boolean modeSelected = false;
+		String mode;
 		
 		while (true) {
 			while(!modeSelected) {
@@ -570,7 +571,7 @@ public class Client {
 					c.setQuiet(true);
 					modeSelected = true;
 				} else if (mode.equals("v")) {
-					c.setMode(false);
+					c.setQuiet(false);
 					modeSelected = true;
 				} else {}
 			}

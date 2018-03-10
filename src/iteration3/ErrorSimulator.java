@@ -71,7 +71,7 @@ public class ErrorSimulator {
 			//constructs a datagram packet to receive packets 20 bytes long
 			receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		    
-		    //waits until receiveSocket receives a datagram packet from the client
+		    // RECEIVE PACKET FROM CLIENT
 		    receivePack(receiveSocket, receivePacket);
 		  
 		    if(receivePacket.getData()[1] == THREE && receivePacket.getData()[515] == ZERO){

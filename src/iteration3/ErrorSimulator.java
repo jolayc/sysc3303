@@ -124,100 +124,95 @@ public class ErrorSimulator {
 			type = ErrorType.getErrorType(0);
 			receiveAndSend();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
+			/* FIX THIS */
 			simulateDuplicatePacket();
 			type = ErrorType.getErrorType(0);
 			receiveAndSend();
 		}
 	}
 	
-	/* NEED TO BE REIMPLEMENTED */
-	// THESE METHODS WILL BE SIMILAR TO SENDANDRECEIVE()
+	
+	/*
+	 * A method that throws away the packet sent
+	 */
 	private void simulateLosePacket() {
-		
+		findPacket();
+		System.out.println("ErrorSim: Dropping packet...");
+		// don't send the packet/do nothing to force a timeout
 	} 
 	
-	private void simulateDelayPacket() {
-		
-	}
-	
-	private void simulateDuplicatePacket() {
-		
-	}
-	
-	private boolean checkError(DatagramSocket socket) {
-		if(receivePacket.getData()[1] == THREE || receivePacket.getData()[1] == FOUR) {
-			if(count == packetNumber) {
-				if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) {
-					simulateError(socket);
-					return true;
-				}
-				if(packet.name().equals("ACK") && receivePacket.getData()[1] == FOUR) {
-					simulateError(socket);
-					return true;
-				}
+	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
+		if(data[1] == THREE && packet.name().equals("DATA")) {
+			System.out.println("ErrorSim: Sending a duplicate packet...");
+			try {
+				socket.send(simulatorPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
-		}return false;
-	}
-	
-	/**
-	 * A method used to check if an error is being simulated
-	 * @return	true if an error has been simulated, false otherwise
-	 */
-	private void simulateError(DatagramSocket socket) {
-		switch(type.name()) {
-			case "LOSE_PACKET":
-				simulateLosePacket(); //changed simulateLosePacket(socket);
-			case "DUPLICATE_PACKET":
-				simulatorPacket = receivePacket;
-			case "DELAY_PACKET": 
-				simulatorPacket = receivePacket;
-				simulateDelayPacket();
+		}
+		if(data[1] == FOUR && packet.name().equals("ACK")) {
+			System.out.println("ErrorSim: Sending a duplicate packet...");
+			try {
+				socket.send(simulatorPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 	}
 	
-/* UNCOMMENT THESE OUT LATER */
-//	private void simulateLosePacket(DatagramSocket socket) {
-//		System.out.println("ErrorSim: Dropping packet...");
-//		// don't send the packet/do nothing to force a timeout
-//		DatagramPacket pack = new DatagramPacket(new byte[516], 516);
-//		receivePack(socket, pack);
-//	}
-//
-//	private void simulateDelayPacket() {
-//		System.out.println("ErrorSim: Delaying packet...");
-//		try {
-//			TimeUnit.SECONDS.sleep(delay);
-//			sendReceiveSocket.send(simulatorPacket);
-//		} catch (InterruptedException ie) {
-//			// sleep interrupted
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			System.exit(1);
-//		}
-//	}
-//
-//	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
-//		
-//		if(data[1] == THREE && packet.name().equals("DATA")) {
-//			System.out.println("ErrorSim: Sending a duplicate packet...");
-//			try {
-//				socket.send(simulatorPacket);
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//				System.exit(1);
+	private void simulateDelayPacket() {
+		findPacket();
+		System.out.println("ErrorSim: Delaying packet...");
+		try {
+			TimeUnit.SECONDS.sleep(delay);
+			sendReceiveSocket.send(simulatorPacket);
+		} catch (InterruptedException ie) {
+			// sleep interrupted
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
+	/**
+	 * Find packet to simulate error and save it in simulatorPacket
+	 */
+	private void findPacket() {
+		
+	}
+	
+// NOT NEEDED AT THE MOMENT	
+//	private boolean checkError(DatagramSocket socket) {
+//		if(receivePacket.getData()[1] == THREE || receivePacket.getData()[1] == FOUR) {
+//			if(count == packetNumber) {
+//				if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) {
+//					simulateError(socket);
+//					return true;
+//				}
+//				if(packet.name().equals("ACK") && receivePacket.getData()[1] == FOUR) {
+//					simulateError(socket);
+//					return true;
+//				}
 //			}
+//		}return false;
+//	}
+	
+//	/** NOT NEEDED AT THE MOMENT
+//	 * A method used to check if an error is being simulated
+//	 * @return	true if an error has been simulated, false otherwise
+//	 */
+//	private void simulateError(DatagramSocket socket) {
+//		switch(type.name()) {
+//			case "LOSE_PACKET":
+//				simulateLosePacket(); //changed simulateLosePacket(socket);
+//			case "DUPLICATE_PACKET":
+//				simulatorPacket = receivePacket;
+//			case "DELAY_PACKET": 
+//				simulatorPacket = receivePacket;
+//				simulateDelayPacket();
 //		}
-//		
-//		if(data[1] == FOUR && packet.name().equals("ACK")) {
-//			System.out.println("ErrorSim: Sending a duplicate packet...");
-//			try {
-//				socket.send(simulatorPacket);
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//				System.exit(1);
-//			}
-//		}
-//		
 //	}
 	
 	/**

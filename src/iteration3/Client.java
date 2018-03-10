@@ -230,7 +230,7 @@ public class Client {
 				if (sendPacket==null){
 					if (numberOfTimeout==6){
 						try {
-							sendReceiveSocket.send(writeRequest);
+							sendReceiveSocket.send(readRequest);
 							numberOfTimeout=0;
 						} catch (IOException e) {
 							e.printStackTrace();

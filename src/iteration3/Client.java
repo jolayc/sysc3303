@@ -24,11 +24,11 @@ public class Client {
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x04;
-	
+	private final int timeoutTime= 1*1000; //number of seconds* ms conversion
 	private Writer writer;
 	
 	private int[] blockNum;
-	
+	private int numberOfTimeout=0;
 	private byte[] fileAsBytes;
 	
 	private boolean mode;
@@ -45,6 +45,7 @@ public class Client {
 	public Client() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket.setSoTimeout(timeoutTime);
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -89,7 +90,32 @@ public class Client {
 			// Receive ACK packet from Server
 			try {
 				sendReceiveSocket.receive(receivePacket);
-			} catch (IOException e) {
+			}catch (SocketTimeoutException se){
+				numberOfTimeout++;
+				if (sendPacket==null){
+					if (numberOfTimeout==6){
+						try {
+							sendReceiveSocket.send(writeRequest);
+							numberOfTimeout=0;
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+				else {
+					if (numberOfTimeout==6){
+						try {
+							sendReceiveSocket.send(sendPacket);
+							numberOfTimeout=0;
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+			catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}

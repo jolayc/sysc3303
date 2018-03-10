@@ -128,7 +128,7 @@ public class ErrorSimulator {
 			receiveAndSend();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
 			/* FIX THIS */
-			simulateDuplicatePacket();
+			simulateDuplicatePacket(simulatorPacket.getData(), sendReceiveSocket);
 			type = ErrorType.getErrorType(0);
 			receiveAndSend();
 		}
@@ -183,7 +183,85 @@ public class ErrorSimulator {
 	 * Find packet to simulate error and save it in simulatorPacket
 	 */
 	private void findPacket() {
-		
+		// buffers for send and receive packets
+		byte[] receiveData = new byte[512 + 4];
+		byte[] sendData = new byte[512 + 4];
+					
+		// status flag
+		boolean stop = false;
+		boolean firstSend = true;
+					
+		// port number
+		// 69 for RQ, 23 for DATA and ACK
+		int port = 69;
+		int count = 0;
+					
+		// repeat forever
+		while(true) {
+			// CLIENT TO SERVER
+			// receive packet from client
+			receivePacket = new DatagramPacket(receiveData, receiveData.length);
+			receivePack(receiveSocket, receivePacket);
+						
+			// check if finished sending and receiving between client and server
+			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
+				stop = true;
+				port = 69;
+			}
+				
+			if(!firstSend) count++;
+			firstSend = false;
+			
+			if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
+				if(count == packetNumber) simulatorPacket = receivePacket;
+			}
+			
+			if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
+				if(count == packetNumber) simulatorPacket = receivePacket;
+			}
+			
+			// send receive packet from client to server
+			// the first packet (which should be a RQ) should be sent to port 69
+			try {
+				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), port);
+			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
+				System.exit(1);
+			}
+						
+			// sends the sendReceivePacket to the server
+			sendPack(sendReceiveSocket, sendReceivePacket);
+			printSend(sendReceivePacket);
+						
+			// SERVER TO CLIENT
+			if (!stop) {
+				try {
+					sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
+				} catch (UnknownHostException e1) {
+					e1.printStackTrace();
+					System.exit(1);
+				}
+							
+				// waits until sendReceivePacket receives a packet from the server
+				receivePack(sendReceiveSocket, sendReceivePacket);
+				count++;
+				
+				if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
+					if(count == packetNumber) simulatorPacket = receivePacket;
+				}
+				
+				if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
+					if(count == packetNumber) simulatorPacket = receivePacket;
+				}
+							
+				// this should change the port to 23
+				port = receivePacket.getPort();
+							
+				// send the packet
+				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), port);
+				sendPack(sendReceiveSocket, sendPacket);
+				}
+			}	
 	}
 	
 // NOT NEEDED AT THE MOMENT	

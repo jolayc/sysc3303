@@ -128,7 +128,7 @@ public class ErrorSimulator {
 			receiveAndSend();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
 			/* FIX THIS */
-			simulateDuplicatePacket();
+			simulateDuplicatePacket(simulatorPacket.getData(), sendReceiveSocket);
 			type = ErrorType.getErrorType(0);
 			receiveAndSend();
 		}

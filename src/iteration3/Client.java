@@ -98,8 +98,8 @@ public class Client {
 							sendReceiveSocket.send(writeRequest);
 							numberOfTimeout=0;
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
+							System.exit(1);
 						}
 					}
 				}
@@ -109,8 +109,8 @@ public class Client {
 							sendReceiveSocket.send(sendPacket);
 							numberOfTimeout=0;
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
+							System.exit(1);
 						}
 					}
 				}
@@ -225,7 +225,32 @@ public class Client {
 			// Receive packet from server
 			try {
 				sendReceiveSocket.receive(receivePacket);
-			} catch (IOException e) {
+			}catch (SocketTimeoutException se){
+				numberOfTimeout++;
+				if (sendPacket==null){
+					if (numberOfTimeout==6){
+						try {
+							sendReceiveSocket.send(writeRequest);
+							numberOfTimeout=0;
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					}
+				}
+				else {
+					if (numberOfTimeout==6){
+						try {
+							sendReceiveSocket.send(sendPacket);
+							numberOfTimeout=0;
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					}
+				}
+			}
+			catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}

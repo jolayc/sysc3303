@@ -24,7 +24,6 @@ public class Client {
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x04;
-	private final int timeoutTime= 1*1000; //number of seconds* ms conversion
 	private Writer writer;
 	
 	private int[] blockNum;
@@ -45,7 +44,7 @@ public class Client {
 	public Client() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(timeoutTime);
+			sendReceiveSocket.setSoTimeout(5000);
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}

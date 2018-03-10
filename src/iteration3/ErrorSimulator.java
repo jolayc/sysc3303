@@ -59,67 +59,78 @@ public class ErrorSimulator {
 	 * Receives a response packet from the server
 	 * Sends the response to the client 
 	 */
-	public void receiveAndSend(){
-		//will repeat "forever"
-		while(true){
-			//buffer for the receive packet
-			byte receiveData[] = new byte[4 + 512];
+	private void receiveAndSend() {
+		if(type.name().equals("NORMAL_OPERATION")) {
+			// buffers for send and receive packets
+			byte[] receiveData = new byte[512 + 4];
+			byte[] sendData = new byte[512 + 4];
+			boolean finished = false;
 			
-			//buffer for the response packet to be sent to the intermediatehost
-			byte sendData[] = new byte[4 + 512];
-		    
-			//constructs a datagram packet to receive packets 20 bytes long
-			receivePacket = new DatagramPacket(receiveData, receiveData.length);
-		    
-		    // RECEIVE PACKET FROM CLIENT
-		    receivePack(receiveSocket, receivePacket);
-		  
-		    if(receivePacket.getData()[1] == THREE && receivePacket.getData()[515] == ZERO){
-		    	break; //might need to fix this
-		    }
-		   
-		    if(checkError(receiveSocket)) type = ErrorType.getErrorType(0);
-		    
-		    
-		    //creates packet to send to server from the packet sent from client
-		    try {
-		    	sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), 69);
-		    } catch (UnknownHostException e1) {
-		    	e1.printStackTrace();
-		    	System.exit(1);
-		    }
-		    	
-		    //sends the sendReceivePacket to the intermediate host
-		    sendPack(sendReceiveSocket, sendReceivePacket);
-		    printSend(sendReceivePacket);
-		    
-		    count++;
-		    if (count == (duplicateOffset-packetNumber) && type.ordinal() == 3) simulateDuplicatePacket(sendReceivePacket.getData(), sendReceiveSocket);
-		    
-		    //creates a datagram packet that will contain sendData that will be ported to port 69
-		    try {
-		    	sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), 69);
-		    } catch (UnknownHostException e1) {
-		    	e1.printStackTrace();
-		    	System.exit(1);
-		    }
-		    	
-		    
-		    //waits until sendReceivePacket receives a datagram packet from the server
-		    receivePack(sendReceiveSocket, sendReceivePacket);	
-		    
-		    if(checkError(sendReceiveSocket)) type = ErrorType.getErrorType(0);
-		    
-		    //creates a datagram packet that will be ported to wherever receivePacket is ported to
-		    sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
-		    	
-		    //sends sendPacket to the client
-		    sendPack(sendReceiveSocket, sendPacket);
+			// repeat forever
+			while(true) {
+				// create request packet from client to send to server
+				receivePacket = new DatagramPacket(receiveData, receiveData.length);
+				
+				// receive request packet from client
+				receivePack(receiveSocket, receivePacket);
+				
+				// get ready to send request to server 
+				try {
+					sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), 69);
+				} catch (UnknownHostException e1) {
+					e1.printStackTrace();
+					System.exit(1);
+				}
+				
+				// send request packet to server
+				sendPack(sendReceiveSocket, sendReceivePacket);
+				printSend(sendReceivePacket);
+				
+				// transfer DATA and ACK packets until complete
+				while(!finished) {
+					// create response packet from server to send to client
+					try {
+						sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), receivePacket.getPort());
+					} catch (UnknownHostException ue) {
+						ue.printStackTrace();
+						System.exit(1);
+					}
+					
+					// receive response packet from server
+					receivePack(sendReceiveSocket, sendReceivePacket);
+					
+					// check if finished
+					if (sendReceivePacket.getData()[1] == 3 && sendReceivePacket.getData()[515] == 0) finished = true;
+					
+					// send response packet to client
+					sendPack(sendReceiveSocket, sendReceivePacket);
+				}
+				finished = false;
+			}	
+		} else if (type.name().equals("LOSE_PACKET")) {
+			simulateLosePacket();
+		} else if (type.name().equals("DELAY_PACKET")) {
+			simulateDelayPacket();
+		} else if (type.name().equals("DUPLICATE_PACKET")) {
+			simulateDuplicatePacket();
 		}
 	}
 	
-	private boolean checkError(DatagramSocket socket) {
+	/* NEED TO BE REIMPLEMENTED */
+	// THESE METHODS WILL BE SIMILAR TO SENDANDRECEIVE()
+	private void simulateLosePacket() {
 		
+	} 
+	
+	private void simulateDelayPacket() {
+		
+	}
+	
+	private void simulateDuplicatePacket() {
+		
+	}
+	
+	private boolean checkError(DatagramSocket socket) {
 		if(receivePacket.getData()[1] == THREE || receivePacket.getData()[1] == FOUR) {
 			if(count == packetNumber) {
 				if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) {
@@ -139,10 +150,9 @@ public class ErrorSimulator {
 	 * @return	true if an error has been simulated, false otherwise
 	 */
 	private void simulateError(DatagramSocket socket) {
-
 		switch(type.name()) {
 			case "LOSE_PACKET":
-				simulateLosePacket(socket);
+				simulateLosePacket(); //changed simulateLosePacket(socket);
 			case "DUPLICATE_PACKET":
 				simulatorPacket = receivePacket;
 			case "DELAY_PACKET": 
@@ -150,50 +160,51 @@ public class ErrorSimulator {
 				simulateDelayPacket();
 		}
 	}
-
-	private void simulateLosePacket(DatagramSocket socket) {
-		System.out.println("ErrorSim: Dropping packet...");
-		// don't send the packet/do nothing to force a timeout
-		DatagramPacket pack = new DatagramPacket(new byte[516], 516);
-		receivePack(socket, pack);
-	}
-
-	private void simulateDelayPacket() {
-		System.out.println("ErrorSim: Delaying packet...");
-		try {
-			TimeUnit.SECONDS.sleep(delay);
-			sendReceiveSocket.send(simulatorPacket);
-		} catch (InterruptedException ie) {
-			// sleep interrupted
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-	}
-
-	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
-		
-		if(data[1] == THREE && packet.name().equals("DATA")) {
-			System.out.println("ErrorSim: Sending a duplicate packet...");
-			try {
-				socket.send(simulatorPacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		
-		if(data[1] == FOUR && packet.name().equals("ACK")) {
-			System.out.println("ErrorSim: Sending a duplicate packet...");
-			try {
-				socket.send(simulatorPacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		
-	}
+	
+/* UNCOMMENT THESE OUT LATER */
+//	private void simulateLosePacket(DatagramSocket socket) {
+//		System.out.println("ErrorSim: Dropping packet...");
+//		// don't send the packet/do nothing to force a timeout
+//		DatagramPacket pack = new DatagramPacket(new byte[516], 516);
+//		receivePack(socket, pack);
+//	}
+//
+//	private void simulateDelayPacket() {
+//		System.out.println("ErrorSim: Delaying packet...");
+//		try {
+//			TimeUnit.SECONDS.sleep(delay);
+//			sendReceiveSocket.send(simulatorPacket);
+//		} catch (InterruptedException ie) {
+//			// sleep interrupted
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//			System.exit(1);
+//		}
+//	}
+//
+//	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
+//		
+//		if(data[1] == THREE && packet.name().equals("DATA")) {
+//			System.out.println("ErrorSim: Sending a duplicate packet...");
+//			try {
+//				socket.send(simulatorPacket);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//				System.exit(1);
+//			}
+//		}
+//		
+//		if(data[1] == FOUR && packet.name().equals("ACK")) {
+//			System.out.println("ErrorSim: Sending a duplicate packet...");
+//			try {
+//				socket.send(simulatorPacket);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//				System.exit(1);
+//			}
+//		}
+//		
+//	}
 	
 	/**
 	 * Sends a packet to a socket

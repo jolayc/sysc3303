@@ -80,7 +80,10 @@ public class ErrorSimulator {
 				receivePack(receiveSocket, receivePacket);
 				
 				// check if finished sending and receiving between client and server
-				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) stop = true;
+				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
+					stop = true;
+					port = 69;
+				}
 				
 				// send receive packet from client to server
 				// the first packet (which should be a RQ) should be sent to port 69

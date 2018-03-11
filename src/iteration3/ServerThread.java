@@ -72,11 +72,11 @@ public class ServerThread extends Thread implements Runnable {
 		// response packet
 		byte[] response = new byte[512 + 4];
 		byte[] data;
-		
+
 		// send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -108,7 +108,6 @@ public class ServerThread extends Thread implements Runnable {
 						}
 					}
 				}
-			}
 			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -150,7 +149,81 @@ public class ServerThread extends Thread implements Runnable {
 	
 	private void handleRead() {
 		// response packet
-		byte[] response = new byte[512 + 4];
+			byte[] data = new byte[512 + 4];
+			byte[] response;
+				
+			// send DATA to read request
+			data = createDataPacket();
+			try {
+				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+			} catch (UnknownHostException ue) {
+				ue.printStackTrace();
+				System.exit(1);
+			}
+			try {
+				sendReceiveSocket.send(sendPacket);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+				
+			// process ACK packets
+			while (true) {
+				response = new byte[512 + 4];
+				receivePacket = new DatagramPacket(response, response.length);
+				// receive packet from Client
+				try { 
+					sendReceiveSocket.receive(receivePacket);
+				} catch (SocketTimeoutException se){
+					numberOfTimeout++;
+					if (numberOfTimeout==6){
+						try {
+							sendReceiveSocket.send(sendPacket);
+							numberOfTimeout=0;
+						} catch (IOException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					}
+				}
+				catch(IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+				}
+				try {
+					handleData(receivePacket.getData());
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+				// create DATA packet after receiving ACK packet
+				data = createDataPacket();
+				blockNum = calcBlockNumber();
+				try {
+					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+				} catch (UnknownHostException ue) {
+					ue.printStackTrace();
+					System.exit(1);
+				}
+				try {
+					sendReceiveSocket.send(sendPacket);
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}					
+				// check if end of write
+				int len = 0;
+				for(byte b: response){
+					if(b == 0 && len > 4) break;
+					len++;
+				}
+					
+				if(len < 512) {
+					break;
+						
+				}
+			sendReceiveSocket.close();
+			}
 	}
 
 	/**

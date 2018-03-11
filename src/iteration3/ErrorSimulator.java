@@ -1,5 +1,4 @@
 package iteration3;
-import java.awt.Window.Type;
 /**
  * Error Simulator of a client/server TFTP application
  * The Error Simulator receives a request packet from a client and then

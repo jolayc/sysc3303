@@ -115,6 +115,7 @@ public class ErrorSimulator {
 					// send the packet
 					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), port);
 					sendPack(sendReceiveSocket, sendPacket);
+					printSend(sendPacket);
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {

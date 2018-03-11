@@ -64,7 +64,7 @@ public class Server implements Runnable {
 	public void run() {
 		while(!receiveSocket.isClosed()) {
 			byte[] data = new byte[512 + 4];
-			// wait on port 69
+			// Grab the request and create a ServerThread to handle the transfer
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
 			checkError(receivePacket);

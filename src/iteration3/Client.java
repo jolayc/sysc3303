@@ -89,7 +89,7 @@ public class Client {
 			// Receive ACK packet from Server
 			try {
 				sendReceiveSocket.receive(receivePacket);
-			}catch (SocketTimeoutException se){
+			} catch (SocketTimeoutException se){
 				numberOfTimeout++;
 				if (sendPacket==null){
 					if (numberOfTimeout==6){

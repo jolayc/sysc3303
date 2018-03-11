@@ -107,7 +107,7 @@ public class ErrorSimulator {
 					}
 					
 					// waits until sendReceivePacket receives a packet from the server
-					receivePack(sendReceiveSocket, sendReceivePacket);
+					receivePack(receiveSocket, sendReceivePacket);
 					
 					// this should change the port to 23
 					port = receivePacket.getPort();

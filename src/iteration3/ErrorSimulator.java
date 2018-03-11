@@ -419,10 +419,8 @@ public class ErrorSimulator {
 			boolean positive = false;
 			while(!positive) {
 				while(!sc.hasNextInt()) sc.next();
-				if(sc.nextInt() > 0) {
-					packetNumber = sc.nextInt();
-					positive = true;
-				}
+				packetNumber = sc.nextInt();
+				if(packetNumber >= 0) positive = true;
 				else System.out.println("ErrorSim: Number must be greater than 0");
 			}
 		}

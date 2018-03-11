@@ -190,12 +190,6 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 				}
-				try {
-					handleData(receivePacket.getData());
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
 				// create DATA packet after receiving ACK packet
 				data = createDataPacket();
 				blockNum = calcBlockNumber();

@@ -76,7 +76,7 @@ public class ServerThread extends Thread implements Runnable {
 		// send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -122,7 +122,7 @@ public class ServerThread extends Thread implements Runnable {
 			response = createACKPacket();
 			blockNum = calcBlockNumber();
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -234,12 +234,13 @@ public class ServerThread extends Thread implements Runnable {
 				cleanedData[i] = data[4+i];
 			}
 			writer.write(cleanedData);
+			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
 		if (data.length < 516) {
-			writer.close();
+			//writer.close();
 			System.out.println("Server: File transfer/write complete.");
 
 		}

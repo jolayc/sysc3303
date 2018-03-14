@@ -98,6 +98,7 @@ public class ErrorSimulator {
 				printSend(sendReceivePacket);
 				
 				// SERVER TO CLIENT
+				// Requests should be sent to port 69
 				if (!stop) {
 					try {
 						sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
@@ -108,8 +109,9 @@ public class ErrorSimulator {
 					
 					// waits until sendReceivePacket receives a packet from the server
 					receivePack(receiveSocket, sendReceivePacket);
+					printReceive(sendReceivePacket);
 					
-					// this should change the port to 23
+					// reassign port number to Client port
 					port = receivePacket.getPort();
 					
 					// send the packet

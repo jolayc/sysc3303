@@ -43,6 +43,8 @@ public class Client {
 	 */
 	public Client() {
 		try {
+			// Bind socket to any available port
+			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
 			sendReceiveSocket.setSoTimeout(5000);
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
@@ -72,13 +74,14 @@ public class Client {
 		
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
-		printSend(writeRequest);
 		try {
 			sendReceiveSocket.send(writeRequest);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		// Print the request packet being sent
+		printSend(writeRequest);
 
 		//Process response from Server
 		while(true) {
@@ -91,19 +94,18 @@ public class Client {
 				sendReceiveSocket.receive(receivePacket);
 			} catch (SocketTimeoutException se){
 				numberOfTimeout++;
-				if (sendPacket==null){
-					if (numberOfTimeout==6){
+				if (sendPacket == null){
+					if (numberOfTimeout == 6){
 						try {
 							sendReceiveSocket.send(writeRequest);
-							numberOfTimeout=0;
+							numberOfTimeout = 0;
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
 						}
 					}
-				}
-				else {
-					if (numberOfTimeout==6){
+				} else {
+					if (numberOfTimeout == 6){
 						try {
 							sendReceiveSocket.send(sendPacket);
 							numberOfTimeout=0;
@@ -113,8 +115,7 @@ public class Client {
 						}
 					}
 				}
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
@@ -127,9 +128,9 @@ public class Client {
 			// Send a DATA Block to write
 			byte[] dataBlock = createDataPacket();
 
-			// Wait for an ACK from Server
+			// Create and Send DATA block to Server
 			try {
-				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), receivePacket.getPort());
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -209,7 +210,7 @@ public class Client {
 			ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 			sendErrorPacket(fileExists);
 			System.out.println("File already exists in Client folder.");
-			System.exit(1);;
+			System.exit(1);
 			this.shutdown();
 		} catch (IOException e) {
 			e.printStackTrace();

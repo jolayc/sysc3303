@@ -35,6 +35,7 @@ public class Server implements Runnable {
 	private String rq;
 	private String read = "READ";
 	private String write = "WRITE";
+	private String other = "OTHER";
 	
 	private int[] blockNumber;
 
@@ -59,11 +60,15 @@ public class Server implements Runnable {
 	}
 	
 	/**
-	 * Runs the server
+	 * Runs the server, the Server waits on port 69
+	 * for RRQ or WRQ packets, when it receives a RQ packet
+	 * it creates a Thread to handle the transfer
 	 */
 	public void run() {
 		while(!receiveSocket.isClosed()) {
+			// packet received buffer
 			byte[] data = new byte[512 + 4];
+			
 			// Grab the request and create a ServerThread to handle the transfer
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
@@ -92,7 +97,7 @@ public class Server implements Runnable {
 					System.exit(1);
 				}
 				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
-			}
+			} else {}
 		}
 		shutdown();
 	}
@@ -106,7 +111,8 @@ public class Server implements Runnable {
 	private String checkReadWrite(byte[] data) {
 	
 		if(data[1] == ONE) rq = read;
-		else rq = write;
+		else if (data[1] == (byte)2)rq = write;
+		else rq = other;
 		return rq;
 	}
 	

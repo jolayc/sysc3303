@@ -65,39 +65,51 @@ public class Server implements Runnable {
 	 * it creates a Thread to handle the transfer
 	 */
 	public void run() {
+		// Continue to Send and Receive until Server is shutdown
 		while(!receiveSocket.isClosed()) {
 			// packet received buffer
 			byte[] data = new byte[512 + 4];
 			
-			// Grab the request and create a ServerThread to handle the transfer
+			// Wait on port 69 for requests
+			// Create and receive request packet
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
+			
+			// Check packet received is an error packet
 			checkError(receivePacket);
+			
+			// Check request type
 			rq = checkReadWrite(receivePacket.getData());
+			
+			// If READ request
 			if (rq.equals(read)) {
 				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
 				blockNumber[0] = 0;
 				blockNumber[1] = 1;
+				// Create thread to handle request
 				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
-			} else if (rq.equals(write)) {
+			}
+			// If WRITE request
+			else if (rq.equals(write)) {
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
-					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
-					
-					// for error checking
+					f = new File(relativePath + "\\Client\\" + getPath(receivePacket));
+					// For error checking
 					Writer w = new Writer(f.getPath(), false);
 					w.close();
 				} catch (FileAlreadyExistsException fe) {
 					ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 					sendErrorPacket(errorPacket);
-					System.out.println("Server: Requested file already exists on machine!");
+					System.out.println("Server: Requested file already exists on machine.");
 					shutdown();
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
 				}
 				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
-			} else {}
+			}
+			// Neither, ignore for now
+			else {}
 		}
 		shutdown();
 	}
@@ -110,9 +122,9 @@ public class Server implements Runnable {
 	 */
 	private String checkReadWrite(byte[] data) {
 	
-		if(data[1] == ONE) rq = read;
-		else if (data[1] == (byte)2)rq = write;
-		else rq = other;
+		if(data[1] == ONE) rq = read; // READ request
+		else if (data[1] == (byte)2)rq = write; // WRITE request
+		else rq = other; // other, e.g. ACK or DATA packet
 		return rq;
 	}
 	
@@ -123,16 +135,10 @@ public class Server implements Runnable {
 				if(packet.getData()[4+i] == 0) break;
 				message[i] = packet.getData()[4+i];
 			}
-			System.out.println("Error! " + new String(message,0,message.length));
+			System.out.println("Server: Error packet received, " + new String(message,0,message.length));
 			shutdown();
 		}
 	}
-	
-	// this method needs to be improved ***
-	//private synchronized void stop() {
-		 //running = false;
-		// receiveSocket.close();		
-	//}
 	
 	/**
 	 * Shuts down the server by closing the socket used

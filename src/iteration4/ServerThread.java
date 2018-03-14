@@ -48,6 +48,13 @@ public class ServerThread extends Thread implements Runnable {
 		this.file = file;
 		this.path = path;
 		this.blockNumber = blockNumber;
+		try {
+			sendReceiveSocket = new DatagramSocket();
+			sendReceiveSocket.setSoTimeout(5000);
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+			System.exit(1);
+		}
 	}
 	/**
 	 * Run handles the packets received from the host. 
@@ -55,17 +62,11 @@ public class ServerThread extends Thread implements Runnable {
 	 * packets are handled by the Thread
 	 */
 	public void run() {
-		try {
-			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
-		} catch (SocketException e1) { 
-			e1.printStackTrace();
-			System.exit(1);
-		}
-		
+		// Check contents of request packet
 		byte[] data =  receivePacket.getData();
 		if (data[0] == 0 && data[1] == 1) handleRead(); // read request
 		else if (data[0] == 0 && data[1] == 2) handleWrite(); // write request
+		else {}
 	}
 	
 	private void handleWrite() {

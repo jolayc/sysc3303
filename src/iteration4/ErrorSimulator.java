@@ -42,10 +42,6 @@ public class ErrorSimulator {
 			
 			//Constructs a socket to send packets from any available port
 			sendReceiveSocket = new DatagramSocket();
-			
-			count = 0;
-			//Set timeout
-			//sendReceiveSocket.setSoTimeout(5000);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -65,61 +61,56 @@ public class ErrorSimulator {
 			byte[] sendData = new byte[512 + 4];
 			
 			// status flag
-			boolean stop = false;
+			boolean transfering = true;
 			
 			// port number
-			// 69 for RQ, 23 for DATA and ACK
+			// Server is waiting for Requests on port 69
 			int port = 69;
 			
 			// repeat forever
 			while(true) {
 				// CLIENT TO SERVER
-				// receive packet from client
+				// Create and Receive datagram packet from Client
 				receivePacket = new DatagramPacket(receiveData, receiveData.length);
-				receivePack(receiveSocket, receivePacket);
-				
-				// check if finished sending and receiving between client and server
+				receivePack(receiveSocket, receivePacket); // PACKET RECEIVED FROM CLIENT
 				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
-					stop = true;
+					transfering = false;
 					port = 69;
 				}
 				
-				// send receive packet from client to server
-				// the first packet (which should be a RQ) should be sent to port 69
+				// ERROR SIM TO SERVER
+				// Request packet sent to port 69
+				// Create and Send datagram packet to Server
 				try {
-					sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), port);
+					sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), port); 
 				} catch (UnknownHostException e1) {
 					e1.printStackTrace();
 					System.exit(1);
 				}
-				
-				// sends the sendReceivePacket to the server
 				sendPack(sendReceiveSocket, sendReceivePacket);
 				printSend(sendReceivePacket);
 				
+				// Reassign port number after request is sent
+				// Port number is Client's port number
+				port = receivePacket.getPort();
+				
 				// SERVER TO CLIENT
-				// Requests should be sent to port 69
-				if (!stop) {
+				if (transfering) {
+					// Create and receive packet from Server
 					try {
 						sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
 					} catch (UnknownHostException e1) {
 						e1.printStackTrace();
 						System.exit(1);
 					}
+					receivePack(sendReceiveSocket, sendReceivePacket);
 					
-					// waits until sendReceivePacket receives a packet from the server
-					receivePack(receiveSocket, sendReceivePacket);
-					printReceive(sendReceivePacket);
-					
-					// reassign port number to Client port
-					port = receivePacket.getPort();
-					
-					// send the packet
-					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), port);
+					// Send received packet back to Client
+					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
 					sendPack(sendReceiveSocket, sendPacket);
 					printSend(sendPacket);
 				}
-			}	
+			}
 		} else if (type.name().equals("LOSE_PACKET")) {
 			simulateLosePacket();
 			type = ErrorType.getErrorType(0); // after done simulating error, swap type to normal operation and rerun receiveAndSend
@@ -271,38 +262,6 @@ public class ErrorSimulator {
 				}
 			}	
 	}
-	
-// NOT NEEDED AT THE MOMENT	
-//	private boolean checkError(DatagramSocket socket) {
-//		if(receivePacket.getData()[1] == THREE || receivePacket.getData()[1] == FOUR) {
-//			if(count == packetNumber) {
-//				if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) {
-//					simulateError(socket);
-//					return true;
-//				}
-//				if(packet.name().equals("ACK") && receivePacket.getData()[1] == FOUR) {
-//					simulateError(socket);
-//					return true;
-//				}
-//			}
-//		}return false;
-//	}
-	
-//	/** NOT NEEDED AT THE MOMENT
-//	 * A method used to check if an error is being simulated
-//	 * @return	true if an error has been simulated, false otherwise
-//	 */
-//	private void simulateError(DatagramSocket socket) {
-//		switch(type.name()) {
-//			case "LOSE_PACKET":
-//				simulateLosePacket(); //changed simulateLosePacket(socket);
-//			case "DUPLICATE_PACKET":
-//				simulatorPacket = receivePacket;
-//			case "DELAY_PACKET": 
-//				simulatorPacket = receivePacket;
-//				simulateDelayPacket();
-//		}
-//	}
 	
 	/**
 	 * Sends a packet to a socket

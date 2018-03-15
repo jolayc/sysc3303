@@ -57,7 +57,7 @@ public class ServerThread extends Thread implements Runnable {
 	public void run() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
+			//sendReceiveSocket.setSoTimeout(5000);
 		} catch (SocketException e1) { 
 			e1.printStackTrace();
 			System.exit(1);
@@ -76,7 +76,7 @@ public class ServerThread extends Thread implements Runnable {
 		// send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -122,7 +122,7 @@ public class ServerThread extends Thread implements Runnable {
 			response = createACKPacket();
 			blockNum = calcBlockNumber();
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);

@@ -43,10 +43,10 @@ public class Client {
 	 */
 	public Client() {
 		try {
-			// Bind socket to any available port
+			// Bind socket to any available port (The Client port)
 			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
+			//sendReceiveSocket.setSoTimeout(5000);
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -75,7 +75,7 @@ public class Client {
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		try {
-			sendReceiveSocket.send(writeRequest);
+			sendReceiveSocket.send(writeRequest); // Client Port to Error Sim Port (23)
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -91,12 +91,14 @@ public class Client {
 
 			// Receive ACK packet from Server
 			try {
-				sendReceiveSocket.receive(receivePacket);
+				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+				// Socket Timeout handling
 			} catch (SocketTimeoutException se){
 				numberOfTimeout++;
 				if (sendPacket == null){
 					if (numberOfTimeout == 6){
 						try {
+							// Retransmit
 							sendReceiveSocket.send(writeRequest);
 							numberOfTimeout = 0;
 						} catch (IOException e) {
@@ -119,6 +121,7 @@ public class Client {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			printReceive(receivePacket);
 			calcBlockNumber();
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
@@ -130,13 +133,13 @@ public class Client {
 
 			// Create and Send DATA block to Server
 			try {
-				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), receivePacket.getPort());
+				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
 			}
 			try {
-				sendReceiveSocket.send(sendPacket);
+				sendReceiveSocket.send(sendPacket); // Client Port to Port 23 (Error Sim)
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);

@@ -65,7 +65,7 @@ public class ErrorSimulator {
 			byte[] sendData = new byte[512 + 4];
 			
 			// status flag
-			boolean stop = false;
+			boolean transferring = true;
 			
 			// port number
 			// 69 for RQ, 23 for DATA and ACK
@@ -76,48 +76,33 @@ public class ErrorSimulator {
 				// CLIENT TO SERVER
 				// receive packet from client
 				receivePacket = new DatagramPacket(receiveData, receiveData.length);
-				receivePack(receiveSocket, receivePacket);
+				receivePack(receiveSocket, receivePacket); // receive packets at port 23
 				
-				// check if finished sending and receiving between client and server
+				// Check if finished transferring
 				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
-					stop = true;
+					transferring = false;
 					port = 69;
 				}
 				
-				// send receive packet from client to server
-				// the first packet (which should be a RQ) should be sent to port 69
+				// send packet from client to server
+				// first packet (the request) should be sent to port 69
 				try {
 					sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), port);
 				} catch (UnknownHostException e1) {
 					e1.printStackTrace();
 					System.exit(1);
 				}
-				
-				// sends the sendReceivePacket to the server
 				sendPack(sendReceiveSocket, sendReceivePacket);
 				printSend(sendReceivePacket);
 				
 				// SERVER TO CLIENT
-				// Requests should be sent to port 69
-				if (!stop) {
+				if (transferring) {
 					try {
-						sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
-					} catch (UnknownHostException e1) {
-						e1.printStackTrace();
-						System.exit(1);
+						sendReceivePacket = new DatagramPacket(sendData, sendData.length);
+					} catch () {
+						
 					}
 					
-					// waits until sendReceivePacket receives a packet from the server
-					receivePack(receiveSocket, sendReceivePacket);
-					printReceive(sendReceivePacket);
-					
-					// reassign port number to Client port
-					port = receivePacket.getPort();
-					
-					// send the packet
-					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), port);
-					sendPack(sendReceiveSocket, sendPacket);
-					printSend(sendPacket);
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {

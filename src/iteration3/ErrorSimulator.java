@@ -97,12 +97,14 @@ public class ErrorSimulator {
 				
 				// SERVER TO CLIENT
 				if (transferring) {
-					try {
-						sendReceivePacket = new DatagramPacket(sendData, sendData.length);
-					} catch () {
-						
-					}
+		
+					sendReceivePacket = new DatagramPacket(sendData, sendData.length);
+					receivePack(receiveSocket, sendReceivePacket); 
 					
+					port = sendReceivePacket.getPort();
+					
+					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+					sendPack(sendReceiveSocket, sendPacket);	
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {

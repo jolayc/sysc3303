@@ -191,8 +191,8 @@ public class ServerThread extends Thread implements Runnable {
 				System.exit(1);
 				}
 				// create DATA packet after receiving ACK packet
-				data = createDataPacket();
 				blockNum = calcBlockNumber();
+				data = createDataPacket();
 				try {
 					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
 				} catch (UnknownHostException ue) {
@@ -204,20 +204,22 @@ public class ServerThread extends Thread implements Runnable {
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
-				}					
-				// check if end of write
+				}				
+				
+				// check if end of read
 				int len = 0;
-				for(byte b: response){
+				//System.out.println(Arrays.toString(data));
+				for(byte b: data){
 					if(b == 0 && len > 4) break;
 					len++;
 				}
-					
+				//System.out.println(len);
+				
 				if(len < 512) {
 					break;
-						
 				}
-			sendReceiveSocket.close();
 			}
+			sendReceiveSocket.close();
 	}
 
 	/**

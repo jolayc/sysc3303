@@ -279,6 +279,7 @@ public class Client {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
@@ -286,7 +287,6 @@ public class Client {
 				receivePacket = new DatagramPacket(incomingData, incomingData.length);
 				receivePack(sendReceiveSocket, receivePacket);
 			}
-			
 			
 			try {
 				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), 23);

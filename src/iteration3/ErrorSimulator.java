@@ -238,7 +238,7 @@ public class ErrorSimulator {
 				}
 							
 				// waits until sendReceivePacket receives a packet from the server
-				receivePack(sendReceiveSocket, sendReceivePacket);
+				receivePack(receiveSocket, sendReceivePacket);
 				count++;
 				
 				if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
@@ -249,11 +249,11 @@ public class ErrorSimulator {
 					if(count == packetNumber) simulatorPacket = receivePacket;
 				}
 							
-				// this should change the port to 23
-				port = receivePacket.getPort();
+				// this should change the port to the thread port
+				port = sendReceivePacket.getPort();
 							
 				// send the packet
-				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), port);
+				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
 				sendPack(sendReceiveSocket, sendPacket);
 				}
 			}	

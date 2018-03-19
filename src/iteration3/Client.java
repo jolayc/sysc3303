@@ -46,7 +46,7 @@ public class Client {
 			// Bind socket to any available port (The Client port)
 			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
+			
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -62,6 +62,14 @@ public class Client {
 	 * @param filename Name of requested file to be written to server
 	 */
 	public void sendWrite(String filename) {
+		
+		try {
+			sendReceiveSocket.setSoTimeout(5000);
+		} catch (SocketException e2) {
+			e2.printStackTrace();
+			System.exit(1);
+		}
+		
 		System.out.println("Client: Requested to write to server with filename: " + filename);
 		byte[] serverACK;
 		boolean received = false;
@@ -235,32 +243,10 @@ public class Client {
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
 			// Receive packet from server
+			
+			
 			try {
 				sendReceiveSocket.receive(receivePacket);
-			}catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				if (sendPacket==null){
-					if (numberOfTimeout==6){
-						try {
-							sendReceiveSocket.send(readRequest);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
-				else {
-					if (numberOfTimeout==6){
-						try {
-							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
 			}
 			catch (IOException e) {
 				e.printStackTrace();

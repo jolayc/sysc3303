@@ -137,7 +137,7 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	
 	private void handleRead() {
-		
+			boolean received = false;
 			try {
 				sendReceiveSocket.setSoTimeout(5000);
 			} catch (SocketException e1) {
@@ -170,24 +170,29 @@ public class ServerThread extends Thread implements Runnable {
 				response = new byte[512 + 4];
 				receivePacket = new DatagramPacket(response, response.length);
 				// receive packet from Client
+				
+				while(!received){
 				try { 
 					sendReceiveSocket.receive(receivePacket);
+					received = true;
 				} catch (SocketTimeoutException se){
+					while(numberOfTimeout < 7){
 					numberOfTimeout++;
 					if (numberOfTimeout==6){
 						try {
 							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
 						}
-					}
+					}}numberOfTimeout = 0;
 				}
 				catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
-				}
+				}}
+				
+				received = false;
 				// create DATA packet after receiving ACK packet
 				blockNum = calcBlockNumber();
 				data = createDataPacket();

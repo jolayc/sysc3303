@@ -240,13 +240,14 @@ public class ErrorSimulator {
 				}
 					
 				// this should change the port to the thread port
+				oldPort = port;
 				port = sendReceivePacket.getPort();
 
 			
 				if(checkError(sendReceivePacket)){
 					if(type.name().equals("LOSE_PACKET")){
 						try {
-							sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
+							sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), oldPort);
 							receivePack(receiveSocket, sendReceivePacket);
 						} catch (UnknownHostException e) {
 							e.printStackTrace();

@@ -57,7 +57,7 @@ public class ServerThread extends Thread implements Runnable {
 	public void run() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			//sendReceiveSocket.setSoTimeout(5000);
+			
 		} catch (SocketException e1) { 
 			e1.printStackTrace();
 			System.exit(1);
@@ -95,19 +95,7 @@ public class ServerThread extends Thread implements Runnable {
 			// receive packet from Client
 			try { 
 				sendReceiveSocket.receive(receivePacket);
-			}catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				
-				if (numberOfTimeout==2){
-					try {
-						sendReceiveSocket.send(sendPacket);
-						numberOfTimeout=0;
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-						}
-					}
-				}
+			}
 			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -119,8 +107,9 @@ public class ServerThread extends Thread implements Runnable {
 				System.exit(1);
 			}
 			// create ACK packet to acknowledge DATA packet
-			response = createACKPacket();
 			blockNum = calcBlockNumber();
+			response = createACKPacket();
+			
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException ue) {
@@ -148,7 +137,16 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	
 	private void handleRead() {
-		// response packet
+		
+			try {
+				sendReceiveSocket.setSoTimeout(5000);
+			} catch (SocketException e1) {
+				
+				e1.printStackTrace();
+				System.exit(1);
+			}
+			
+			// response packet
 			byte[] data = new byte[512 + 4];
 			byte[] response;
 				
@@ -324,30 +322,4 @@ public class ServerThread extends Thread implements Runnable {
 		return pack;
 	}
 	
-	/**
-	 *  Print information relating to send request 
-	 * @param dp datagram Packet being printed
-	 */
-	private void printSend(DatagramPacket dp) {
-		System.out.println("Server: Sending packet");
-		System.out.println("To host: " + dp.getAddress());
-		System.out.println("Destination Port: " + dp.getPort());
-		printInfo(dp);
-	}
-	
-	/**
-	 *  Print information relating to packet
-	 * @param dp datagram Packet being printed
-	 */
-	private void printInfo(DatagramPacket dp) {
-		int len = dp.getLength();
-		System.out.println("Length: " + len);
-		System.out.println("Containing: ");
-
-		// prints the contents of packet as bytes
-		System.out.println(Arrays.toString(dp.getData()));
-		// prints the contents of packet as a String
-		String contents = new String(dp.getData(),0,len);
-		System.out.println(contents);
-	}
 }

@@ -21,7 +21,7 @@ public class ErrorSimulator {
 	private final byte FOUR = 4;
 	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
-	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
+	private DatagramPacket receivePacket, sendReceivePacket, sendPacket, losePacket;
 	private DatagramPacket simulatorPacket;
 	private static ErrorType type;
 	private static PacketType packet;
@@ -79,9 +79,8 @@ public class ErrorSimulator {
 				receivePack(receiveSocket, receivePacket); // receive packets at port 23
 				
 				// Check if finished transferring
-				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
+				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[4] == 0) {
 					transferring = false;
-					port = 69;
 				}
 				
 				// send packet from client to server
@@ -108,11 +107,9 @@ public class ErrorSimulator {
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {
-			simulateLosePacket();
-			type = ErrorType.getErrorType(0); // after done simulating error, swap type to normal operation and rerun receiveAndSend
-			receiveAndSend();
+			findPacket();
 		} else if (type.name().equals("DELAY_PACKET")) {
-			simulateDelayPacket();
+			findPacket();
 			type = ErrorType.getErrorType(0);
 			receiveAndSend();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
@@ -122,16 +119,6 @@ public class ErrorSimulator {
 			receiveAndSend();
 		}
 	}
-	
-	
-	/*
-	 * A method that throws away the packet sent
-	 */
-	private void simulateLosePacket() {
-		findPacket();
-		System.out.println("ErrorSim: Dropping packet...");
-		// don't send the packet/do nothing to force a timeout
-	} 
 	
 	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
 		findPacket();
@@ -184,15 +171,14 @@ public class ErrorSimulator {
 					
 		// status flag
 		boolean stop = false;
-		boolean firstSend = true;
 					
 		// port number
 		// 69 for RQ, 23 for DATA and ACK
 		int port = 69;
-		int count = 0;
+		int oldPort;
 					
 		// repeat forever
-		while(true) {
+		while(true){
 			// CLIENT TO SERVER
 			// receive packet from client
 			receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -201,18 +187,22 @@ public class ErrorSimulator {
 			// check if finished sending and receiving between client and server
 			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
 				stop = true;
-				port = 69;
 			}
-				
-			if(!firstSend) count++;
-			firstSend = false;
 			
-			if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
-				if(count == packetNumber) simulatorPacket = receivePacket;
+			if(receivePacket.getData()[1] == THREE) {
+				count++;
+				if(packet.name().equals("DATA") && count == packetNumber) simulatorPacket = receivePacket;
 			}
 			
 			if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
 				if(count == packetNumber) simulatorPacket = receivePacket;
+			}
+			
+			if(checkError(receivePacket)){
+				if(type.name().equals("LOSE_PACKET")){
+					receivePacket = new DatagramPacket(receiveData, receiveData.length);
+					receivePack(receiveSocket, receivePacket);
+				}
 			}
 			
 			// send receive packet from client to server
@@ -236,21 +226,34 @@ public class ErrorSimulator {
 					e1.printStackTrace();
 					System.exit(1);
 				}
-							
+						
 				// waits until sendReceivePacket receives a packet from the server
 				receivePack(receiveSocket, sendReceivePacket);
-				count++;
 				
-				if(receivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
-					if(count == packetNumber) simulatorPacket = receivePacket;
+				if(sendReceivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
+					count++;
+					if(packet.name().equals("DATA") && count == packetNumber) simulatorPacket = receivePacket;
 				}
 				
-				if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
+				if(sendReceivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
 					if(count == packetNumber) simulatorPacket = receivePacket;
 				}
-							
+					
 				// this should change the port to the thread port
 				port = sendReceivePacket.getPort();
+
+			
+				if(checkError(sendReceivePacket)){
+					if(type.name().equals("LOSE_PACKET")){
+						try {
+							sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
+							receivePack(receiveSocket, sendReceivePacket);
+						} catch (UnknownHostException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					}
+				}
 							
 				// send the packet
 				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
@@ -259,37 +262,41 @@ public class ErrorSimulator {
 			}	
 	}
 	
-// NOT NEEDED AT THE MOMENT	
-//	private boolean checkError(DatagramSocket socket) {
-//		if(receivePacket.getData()[1] == THREE || receivePacket.getData()[1] == FOUR) {
-//			if(count == packetNumber) {
-//				if(packet.name().equals("DATA") && receivePacket.getData()[1] == THREE) {
-//					simulateError(socket);
-//					return true;
-//				}
-//				if(packet.name().equals("ACK") && receivePacket.getData()[1] == FOUR) {
-//					simulateError(socket);
-//					return true;
-//				}
-//			}
-//		}return false;
-//	}
+
+	private boolean checkError(DatagramPacket pack) {
+		if(pack.getData()[1] == THREE || pack.getData()[1] == FOUR) {
+			if(count == packetNumber) {
+				System.out.println("Here");
+				if(packet.name().equals("DATA") && pack.getData()[1] == THREE) {
+					simulateError();
+					return true;
+				}
+				if(packet.name().equals("ACK") && pack.getData()[1] == FOUR) {
+					simulateError();
+					return true;
+				}
+			}
+		}return false;
+	}
 	
-//	/** NOT NEEDED AT THE MOMENT
-//	 * A method used to check if an error is being simulated
-//	 * @return	true if an error has been simulated, false otherwise
-//	 */
-//	private void simulateError(DatagramSocket socket) {
-//		switch(type.name()) {
-//			case "LOSE_PACKET":
-//				simulateLosePacket(); //changed simulateLosePacket(socket);
-//			case "DUPLICATE_PACKET":
-//				simulatorPacket = receivePacket;
-//			case "DELAY_PACKET": 
-//				simulatorPacket = receivePacket;
-//				simulateDelayPacket();
-//		}
-//	}
+
+	/** A method used to check if an error is being simulated
+	 * @return	true if an error has been simulated, false otherwise
+	 */
+	private void simulateError() {
+		switch(type.name()) {
+			case "LOSE_PACKET":
+				System.out.println("ErrorSim: Dropping packet...");
+				break;
+			case "DUPLICATE_PACKET":
+				simulatorPacket = receivePacket;
+				break;
+			case "DELAY_PACKET": 
+				simulatorPacket = receivePacket;
+				simulateDelayPacket();
+				break;
+		}
+	}
 	
 	/**
 	 * Sends a packet to a socket

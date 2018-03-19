@@ -46,7 +46,7 @@ public class Client {
 			// Bind socket to any available port (The Client port)
 			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
-			//sendReceiveSocket.setSoTimeout(5000);
+			sendReceiveSocket.setSoTimeout(5000);
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -64,6 +64,7 @@ public class Client {
 	public void sendWrite(String filename) {
 		System.out.println("Client: Requested to write to server with filename: " + filename);
 		byte[] serverACK;
+		boolean received = false;
 
 		blockNum = new int[2];
 		blockNum[0] = 0;
@@ -87,40 +88,45 @@ public class Client {
 		while(true) {
 			// Server responds to Write request with an ACK
 			serverACK = new byte[4];
+			received = false;
 			receivePacket = new DatagramPacket(serverACK, serverACK.length);
 
 			// Receive ACK packet from Server
+			while(!received){
 			try {
 				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+				received = true;
 				// Socket Timeout handling
 			} catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				if (sendPacket == null){
-					if (numberOfTimeout == 6){
-						try {
-							// Retransmit
-							sendReceiveSocket.send(writeRequest);
-							numberOfTimeout = 0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
+				while(numberOfTimeout < 7){
+					numberOfTimeout++;
+					if (sendPacket == null){
+						if (numberOfTimeout == 6){
+							try {
+								// Retransmit
+								sendReceiveSocket.send(writeRequest);
+								
+							} catch (IOException e) {
+								e.printStackTrace();
+								System.exit(1);
+							}
+						}
+					} else {
+						if (numberOfTimeout == 6){
+							try {
+								sendReceiveSocket.send(sendPacket);
+							} catch (IOException e) {
+								e.printStackTrace();
+								System.exit(1);
+							}
 						}
 					}
-				} else {
-					if (numberOfTimeout == 6){
-						try {
-							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
+				}numberOfTimeout = 0;
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
-			}
+			}}
+			
 			printReceive(receivePacket);
 			calcBlockNumber();
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
@@ -150,7 +156,10 @@ public class Client {
 				if(b == 0 && len > 4) break;
 				len++;
 			}		
+			
 			if(len < 512) {
+				receivePacket = new DatagramPacket(serverACK, serverACK.length);
+				receivePack(sendReceiveSocket, receivePacket);
 				sendEmptyDataPacket();
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
@@ -401,11 +410,13 @@ public class Client {
 		try {        
 	         System.out.println("Waiting...");
 	         socket.receive(packet);
+	         printReceive(packet);	
+		} catch(SocketTimeoutException e){
+			return null;
 	    } catch (IOException e) {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		printReceive(packet);	
 		return packet;
 	}
 

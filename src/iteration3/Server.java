@@ -128,12 +128,6 @@ public class Server implements Runnable {
 		}
 	}
 	
-	// this method needs to be improved ***
-	//private synchronized void stop() {
-		 //running = false;
-		// receiveSocket.close();		
-	//}
-	
 	/**
 	 * Shuts down the server by closing the socket used
 	 * for receiving
@@ -223,28 +217,6 @@ public class Server implements Runnable {
 			e.printStackTrace();
 			System.exit(1);
 		}
-	}
-	
-	/**
-	 * increments block number 
-	 * @return block number as array on integers
-	 */
-	
-	private int[] calcBlockNumber(){
-
-		if(blockNumber[1] == 9) {
-			blockNumber[0]++;
-			blockNumber[1] = 0;
-		}
-		else{
-			blockNumber[1]++;
-		}
-
-		return blockNumber;
-	}
-	
-	private int getBlockIntegerValue(int a, int b) {
-		return (a*10) + b;
 	}
 	
 	/**

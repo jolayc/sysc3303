@@ -111,37 +111,20 @@ public class ErrorSimulator {
 		} else if (type.name().equals("DELAY_PACKET")) {
 			findPacket();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
-			/* FIX THIS */
-			simulateDuplicatePacket(simulatorPacket.getData(), sendReceiveSocket);
-			type = ErrorType.getErrorType(0);
-			receiveAndSend();
+			findPacket();
+	
 		}
 	}
 	
-	private void simulateDuplicatePacket(byte[] data, DatagramSocket socket) {
-		findPacket();
+	private void simulateDuplicatePacket(DatagramSocket socket) {
+
 		DatagramPacket duplicate = simulatorPacket;
-		
-		packetNumber = duplicateOffset - packetNumber;
-		findPacket();
-		
-		if(data[1] == THREE && packet.name().equals("DATA")) {
-			System.out.println("ErrorSim: Sending a duplicate packet...");
-			try {
-				socket.send(duplicate);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		if(data[1] == FOUR && packet.name().equals("ACK")) {
-			System.out.println("ErrorSim: Sending a duplicate packet...");
-			try {
-				socket.send(duplicate);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
+		System.out.println("ErrorSim: Sending a duplicate packet...");
+		try {
+			socket.send(duplicate);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	
@@ -185,11 +168,10 @@ public class ErrorSimulator {
 			
 			if(receivePacket.getData()[1] == THREE) {
 				count++;
-				if(packet.name().equals("DATA") && count == packetNumber) simulatorPacket = receivePacket;
 			}
 			
-			if(receivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
-				if(count == packetNumber) simulatorPacket = receivePacket;
+			if(type.name().equals("DUPLICATE_PACKET")){
+				if(count == duplicateOffset + packetNumber) simulateDuplicatePacket(sendReceiveSocket);
 			}
 			
 			if(checkError(receivePacket)){
@@ -226,17 +208,16 @@ public class ErrorSimulator {
 				
 				if(sendReceivePacket.getData()[1] == THREE) {
 					count++;
-					if(packet.name().equals("DATA") && count == packetNumber) simulatorPacket = receivePacket;
-				}
-				
-				if(sendReceivePacket.getData()[1] == FOUR && packet.name().equals("ACK")) {
-					if(count == packetNumber) simulatorPacket = receivePacket;
 				}
 					
 				// this should change the port to the thread port
 				oldPort = port;
 				port = sendReceivePacket.getPort();
 
+				if(type.name().equals("DUPLICATE_PACKET")){
+					System.out.print("Count: " + count + "Offset: " + (duplicateOffset + packetNumber));
+					if(count == duplicateOffset + packetNumber) simulateDuplicatePacket(sendReceiveSocket);
+				}
 			
 				if(checkError(sendReceivePacket)){
 					if(type.name().equals("LOSE_PACKET")){
@@ -287,7 +268,6 @@ public class ErrorSimulator {
 				simulatorPacket = receivePacket;
 				break;
 			case "DELAY_PACKET": 
-				simulatorPacket = receivePacket;
 				simulateDelayPacket();
 				break;
 		}

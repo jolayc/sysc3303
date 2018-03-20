@@ -535,11 +535,13 @@ public class Client {
 	 * Prints information relating to a send request
 	 * @param packet, DatagramPacket that is used in the send request
 	 */
-	private void printSend(DatagramPacket packet){
+	private void printSend(DatagramPacket packet) {
 		System.out.println("Client: Sending packet");
-	    System.out.println("To host: " + packet.getAddress());
-	    System.out.println("Destination host port: " + packet.getPort());
-	    printStatus(packet);
+		if (!mode) {
+		    System.out.println("To host: " + packet.getAddress());
+		    System.out.println("Destination host port: " + packet.getPort());
+		    printStatus(packet);
+		}
 	}
 	
 	/**
@@ -548,26 +550,33 @@ public class Client {
 	 */
 	private void printReceive(DatagramPacket packet){
 		System.out.println("Client: Packet received");
-	    System.out.println("From host: " + packet.getAddress());
-	    System.out.println("Host port: " + packet.getPort());
-	    printStatus(packet);
+		if(!mode) {
+		    System.out.println("From host: " + packet.getAddress());
+		    System.out.println("Host port: " + packet.getPort());
+		    printStatus(packet);
+		}
 	}
 	
 	/**
 	 * Prints information relating to a any request
 	 * @param packet, DatagramPacket that is used in the request
 	 */
-	private void printStatus(DatagramPacket packet){
-	    int len = packet.getLength();
-	    System.out.println("Length: " + len);
-	    System.out.print("Containing: ");
-	    
-	    //prints the bytes of the packet
-	    System.out.println(Arrays.toString(packet.getData()));
-	    
-	    //prints the packet as text
-		String received = new String(packet.getData(),0,len);
-		System.out.println(received);
+	private void printStatus(DatagramPacket packet) {
+		if (!mode) {
+			byte[] data = packet.getData();
+			PacketType type = PacketType.getPacketType((int)data[1]);
+			int len = packet.getLength();
+			System.out.println("Length: " + len);
+			System.out.println("Packet Type: " + type);
+			System.out.print("Containing: ");
+
+			// prints the bytes of the packet
+			System.out.println(Arrays.toString(data));
+
+			// prints the packet as text
+			String received = new String(packet.getData(), 0, len);
+			System.out.println(received);
+		}
 	}
 	
 	/**
@@ -602,6 +611,10 @@ public class Client {
 		System.exit(1);
 	}
 	
+	/**
+	 * Sets the mode to 'Quiet' or 'Verbose'
+	 * @param mode	True for Quiet, False for Verbose
+	 */
 	private void setQuiet(boolean mode) {
 		this.mode = mode;	
 	}

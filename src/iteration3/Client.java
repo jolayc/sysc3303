@@ -129,7 +129,7 @@ public class Client {
 							}
 						}
 					}
-				}numberOfTimeout = 0;
+				} numberOfTimeout = 0;
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -137,6 +137,7 @@ public class Client {
 			
 			printReceive(receivePacket);
 			calcBlockNumber();
+			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
@@ -166,6 +167,12 @@ public class Client {
 			}		
 			
 			if(len < 512) {
+				try {
+					sendReceiveSocket.setSoTimeout(200);
+				} catch (SocketException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
 				sendEmptyDataPacket();
@@ -279,6 +286,7 @@ public class Client {
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
+			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(incomingData, incomingData.length);
 				receivePack(sendReceiveSocket, receivePacket);
@@ -305,6 +313,7 @@ public class Client {
 			}
 			
 			if(len < 512) {
+				
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}

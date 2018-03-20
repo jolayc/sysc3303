@@ -104,6 +104,9 @@ public class ErrorSimulator {
 					
 					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
 					sendPack(sendReceiveSocket, sendPacket);	
+					
+					// Check if end of transfer
+					//if(sendPacket.getData()[1] == 3 && sendPacket.getData()[2] == 0 && sendPacket.getData()[515] == 0) port = 69;
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {
@@ -112,7 +115,6 @@ public class ErrorSimulator {
 			findPacket();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
 			findPacket();
-	
 		}
 	}
 	

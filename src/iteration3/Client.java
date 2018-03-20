@@ -64,7 +64,7 @@ public class Client {
 	public void sendWrite(String filename) {
 		
 		try {
-			sendReceiveSocket.setSoTimeout(5000);
+			sendReceiveSocket.setSoTimeout(3000);
 		} catch (SocketException e2) {
 			e2.printStackTrace();
 			System.exit(1);
@@ -106,10 +106,10 @@ public class Client {
 				received = true;
 				// Socket Timeout handling
 			} catch (SocketTimeoutException se){
-				while(numberOfTimeout < 7){
+				while(numberOfTimeout < 2){
 					numberOfTimeout++;
 					if (sendPacket == null){
-						if (numberOfTimeout == 6){
+						if (numberOfTimeout == 2){
 							try {
 								// Retransmit
 								sendReceiveSocket.send(writeRequest);
@@ -120,7 +120,7 @@ public class Client {
 							}
 						}
 					} else {
-						if (numberOfTimeout == 6){
+						if (numberOfTimeout == 2){
 							try {
 								sendReceiveSocket.send(sendPacket);
 							} catch (IOException e) {

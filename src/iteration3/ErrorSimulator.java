@@ -21,7 +21,7 @@ public class ErrorSimulator {
 	private final byte FOUR = 4;
 	
 	private DatagramSocket receiveSocket, sendReceiveSocket;
-	private DatagramPacket receivePacket, sendReceivePacket, sendPacket, losePacket;
+	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
 	private DatagramPacket simulatorPacket;
 	private static ErrorType type;
 	private static PacketType packet;
@@ -110,8 +110,6 @@ public class ErrorSimulator {
 			findPacket();
 		} else if (type.name().equals("DELAY_PACKET")) {
 			findPacket();
-			type = ErrorType.getErrorType(0);
-			receiveAndSend();
 		} else if (type.name().equals("DUPLICATE_PACKET")) {
 			/* FIX THIS */
 			simulateDuplicatePacket(simulatorPacket.getData(), sendReceiveSocket);
@@ -148,15 +146,11 @@ public class ErrorSimulator {
 	}
 	
 	private void simulateDelayPacket() {
-		findPacket();
 		System.out.println("ErrorSim: Delaying packet...");
 		try {
 			TimeUnit.SECONDS.sleep(delay);
-			sendReceiveSocket.send(simulatorPacket);
+			System.out.println("Finished");
 		} catch (InterruptedException ie) {
-			// sleep interrupted
-		} catch (IOException e) {
-			e.printStackTrace();
 			System.exit(1);
 		}
 	}
@@ -230,7 +224,7 @@ public class ErrorSimulator {
 				// waits until sendReceivePacket receives a packet from the server
 				receivePack(receiveSocket, sendReceivePacket);
 				
-				if(sendReceivePacket.getData()[1] == THREE && packet.name().equals("DATA")) {
+				if(sendReceivePacket.getData()[1] == THREE) {
 					count++;
 					if(packet.name().equals("DATA") && count == packetNumber) simulatorPacket = receivePacket;
 				}
@@ -265,9 +259,9 @@ public class ErrorSimulator {
 	
 
 	private boolean checkError(DatagramPacket pack) {
+		
 		if(pack.getData()[1] == THREE || pack.getData()[1] == FOUR) {
 			if(count == packetNumber) {
-				System.out.println("Here");
 				if(packet.name().equals("DATA") && pack.getData()[1] == THREE) {
 					simulateError();
 					return true;
@@ -425,7 +419,7 @@ public class ErrorSimulator {
 		if(type.ordinal() == 2) {//for delay packet
 			System.out.println("ErrorSim: Enter the delay, in seconds: ");
 			while(!sc.hasNextInt()) sc.next();
-			delay = 1000 * sc.nextInt();
+			delay = sc.nextInt();
 		}
 		
 		if(type.ordinal() == 3) {//for duplicate packet

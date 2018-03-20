@@ -64,7 +64,7 @@ public class Client {
 	public void sendWrite(String filename) {
 		
 		try {
-			sendReceiveSocket.setSoTimeout(3000);
+			sendReceiveSocket.setSoTimeout(10000);
 		} catch (SocketException e2) {
 			e2.printStackTrace();
 			System.exit(1);
@@ -225,13 +225,14 @@ public class Client {
 		// Create writer and file with filename in Client folder
 		try { 
 			File f = new File(relativePath + "\\Client\\" + filename);
+			if(f.exists()) {
+				ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+				sendErrorPacket(fileExists);
+				System.out.println("File already exists in Client folder.");
+				System.exit(1);
+				this.shutdown();
+			}
 			writer = new Writer(f.getPath(), false);
-		} catch (FileAlreadyExistsException fe) {
-			ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
-			sendErrorPacket(fileExists);
-			System.out.println("File already exists in Client folder.");
-			System.exit(1);
-			this.shutdown();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -594,7 +595,7 @@ public class Client {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			sendErrorPacket(fileNotFound);
 			System.exit(1);
-		} catch (IOException e) {
+	    } catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}

@@ -160,6 +160,7 @@ public class ErrorSimulator {
 			// receive packet from client
 			receivePacket = new DatagramPacket(receiveData, receiveData.length);
 			receivePack(receiveSocket, receivePacket);
+			System.out.println("Client Packet: " + Arrays.toString(receivePacket.getData()));
 						
 			// check if finished sending and receiving between client and server
 			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
@@ -230,14 +231,14 @@ public class ErrorSimulator {
 						}
 					}
 				}
-							
+			
 				// send the packet
 				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+				System.out.println(receivePacket.getAddress());
 				sendPack(sendReceiveSocket, sendPacket);
 				}
 			}	
 	}
-	
 
 	private boolean checkError(DatagramPacket pack) {
 		

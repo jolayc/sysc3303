@@ -7,7 +7,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -83,15 +82,15 @@ public class Server implements Runnable {
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
-					
+					if(f.exists()) {
+						ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+						sendErrorPacket(errorPacket);
+						System.out.println("Server: Requested file already exists on machine!");
+						System.exit(1);
+					}
 					// for error checking
 					Writer w = new Writer(f.getPath(), false);
 					w.close();
-				} catch (FileAlreadyExistsException fe) {
-					ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
-					sendErrorPacket(errorPacket);
-					System.out.println("Server: Requested file already exists on machine!");
-					shutdown();
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);

@@ -139,7 +139,7 @@ public class ServerThread extends Thread implements Runnable {
 	private void handleRead() {
 			boolean received = false;
 			try {
-				sendReceiveSocket.setSoTimeout(5000);
+				sendReceiveSocket.setSoTimeout(10000);
 			} catch (SocketException e1) {
 				
 				e1.printStackTrace();
@@ -176,9 +176,9 @@ public class ServerThread extends Thread implements Runnable {
 					sendReceiveSocket.receive(receivePacket);
 					received = true;
 				} catch (SocketTimeoutException se){
-					while(numberOfTimeout < 7){
+					while(numberOfTimeout < 2){
 					numberOfTimeout++;
-					if (numberOfTimeout==6){
+					if (numberOfTimeout==2){
 						try {
 							sendReceiveSocket.send(sendPacket);
 						} catch (IOException e) {
@@ -188,8 +188,8 @@ public class ServerThread extends Thread implements Runnable {
 					}}numberOfTimeout = 0;
 				}
 				catch(IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+					e.printStackTrace();
+					System.exit(1);
 				}}
 				
 				received = false;

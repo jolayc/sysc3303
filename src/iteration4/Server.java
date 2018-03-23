@@ -7,7 +7,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -65,51 +64,38 @@ public class Server implements Runnable {
 	 * it creates a Thread to handle the transfer
 	 */
 	public void run() {
-		// Continue to Send and Receive until Server is shutdown
 		while(!receiveSocket.isClosed()) {
 			// packet received buffer
 			byte[] data = new byte[512 + 4];
-			
-			// Wait on port 69 for requests
-			// Create and receive request packet
+			// Grab the request and create a ServerThread to handle the transfer
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
-			
-			// Check packet received is an error packet
 			checkError(receivePacket);
-			
-			// Check request type
-			rq = checkReadWrite(receivePacket.getData());
-			
-			// If READ request
+ 			rq = checkReadWrite(receivePacket.getData());
 			if (rq.equals(read)) {
 				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
 				blockNumber[0] = 0;
 				blockNumber[1] = 1;
-				// Create thread to handle request
 				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
-			}
-			// If WRITE request
-			else if (rq.equals(write)) {
+			} else if (rq.equals(write)) {
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
-					f = new File(relativePath + "\\Client\\" + getPath(receivePacket));
-					// For error checking
+					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+					if(f.exists()) {
+						ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+						sendErrorPacket(errorPacket);
+						System.out.println("Server: Requested file already exists on machine!");
+						System.exit(1);
+					}
+					// for error checking
 					Writer w = new Writer(f.getPath(), false);
 					w.close();
-				} catch (FileAlreadyExistsException fe) {
-					ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
-					sendErrorPacket(errorPacket);
-					System.out.println("Server: Requested file already exists on machine.");
-					shutdown();
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
 				}
 				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
-			}
-			// Neither, ignore for now
-			else {}
+			} else {}
 		}
 		shutdown();
 	}
@@ -122,9 +108,9 @@ public class Server implements Runnable {
 	 */
 	private String checkReadWrite(byte[] data) {
 	
-		if(data[1] == ONE) rq = read; // READ request
-		else if (data[1] == (byte)2)rq = write; // WRITE request
-		else rq = other; // other, e.g. ACK or DATA packet
+		if(data[1] == ONE) rq = read;
+		else if (data[1] == (byte)2)rq = write;
+		else rq = other;
 		return rq;
 	}
 	
@@ -135,7 +121,7 @@ public class Server implements Runnable {
 				if(packet.getData()[4+i] == 0) break;
 				message[i] = packet.getData()[4+i];
 			}
-			System.out.println("Server: Error packet received, " + new String(message,0,message.length));
+			System.out.println("Error! " + new String(message,0,message.length));
 			shutdown();
 		}
 	}
@@ -208,6 +194,7 @@ public class Server implements Runnable {
 			bytes = Files.readAllBytes(path);
 		} catch (NoSuchFileException fe) {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
+			System.out.println("File does not exist in server");
 			sendErrorPacket(fileNotFound);
 			System.exit(1);
 		} catch (IOException e) {
@@ -219,38 +206,15 @@ public class Server implements Runnable {
 	
 	public void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
-		
 		try {
 			DatagramSocket sendSocket = new DatagramSocket();
-			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), receivePacket.getPort());
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), 23);
 			sendSocket.send(errorPacket);
 			sendSocket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
-	}
-	
-	/**
-	 * increments block number 
-	 * @return block number as array on integers
-	 */
-	
-	private int[] calcBlockNumber(){
-
-		if(blockNumber[1] == 9) {
-			blockNumber[0]++;
-			blockNumber[1] = 0;
-		}
-		else{
-			blockNumber[1]++;
-		}
-
-		return blockNumber;
-	}
-	
-	private int getBlockIntegerValue(int a, int b) {
-		return (a*10) + b;
 	}
 	
 	/**

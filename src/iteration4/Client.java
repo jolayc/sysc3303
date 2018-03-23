@@ -43,10 +43,10 @@ public class Client {
 	 */
 	public Client() {
 		try {
-			// Bind socket to any available port
+			// Bind socket to any available port (The Client port)
 			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
+			
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -62,8 +62,17 @@ public class Client {
 	 * @param filename Name of requested file to be written to server
 	 */
 	public void sendWrite(String filename) {
+		
+		try {
+			sendReceiveSocket.setSoTimeout(10000);
+		} catch (SocketException e2) {
+			e2.printStackTrace();
+			System.exit(1);
+		}
+		
 		System.out.println("Client: Requested to write to server with filename: " + filename);
 		byte[] serverACK;
+		boolean received = false;
 
 		blockNum = new int[2];
 		blockNum[0] = 0;
@@ -75,7 +84,7 @@ public class Client {
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		try {
-			sendReceiveSocket.send(writeRequest);
+			sendReceiveSocket.send(writeRequest); // Client Port to Error Sim Port (23)
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -86,40 +95,50 @@ public class Client {
 		//Process response from Server
 		while(true) {
 			// Server responds to Write request with an ACK
-			serverACK = new byte[4];
+			serverACK = new byte[516];
+			received = false;
 			receivePacket = new DatagramPacket(serverACK, serverACK.length);
 
 			// Receive ACK packet from Server
+			while(!received){
 			try {
-				sendReceiveSocket.receive(receivePacket);
+				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+				checkError(receivePacket);
+				received = true;
+				// Socket Timeout handling
 			} catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				if (sendPacket == null){
-					if (numberOfTimeout == 6){
-						try {
-							sendReceiveSocket.send(writeRequest);
-							numberOfTimeout = 0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
+				while(numberOfTimeout < 2){
+					numberOfTimeout++;
+					if (sendPacket == null){
+						if (numberOfTimeout == 2){
+							try {
+								// Retransmit
+								sendReceiveSocket.send(writeRequest);
+								
+							} catch (IOException e) {
+								e.printStackTrace();
+								System.exit(1);
+							}
+						}
+					} else {
+						if (numberOfTimeout == 2){
+							try {
+								sendReceiveSocket.send(sendPacket);
+							} catch (IOException e) {
+								e.printStackTrace();
+								System.exit(1);
+							}
 						}
 					}
-				} else {
-					if (numberOfTimeout == 6){
-						try {
-							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
+				} numberOfTimeout = 0;
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
-			}
+			}}
+			
+			printReceive(receivePacket);
 			calcBlockNumber();
+			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
@@ -130,13 +149,13 @@ public class Client {
 
 			// Create and Send DATA block to Server
 			try {
-				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), receivePacket.getPort());
+				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
 			}
 			try {
-				sendReceiveSocket.send(sendPacket);
+				sendReceiveSocket.send(sendPacket); // Client Port to Port 23 (Error Sim)
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -147,7 +166,16 @@ public class Client {
 				if(b == 0 && len > 4) break;
 				len++;
 			}		
+			
 			if(len < 512) {
+				try {
+					sendReceiveSocket.setSoTimeout(200);
+				} catch (SocketException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+				receivePacket = new DatagramPacket(serverACK, serverACK.length);
+				receivePack(sendReceiveSocket, receivePacket);
 				sendEmptyDataPacket();
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
@@ -192,6 +220,8 @@ public class Client {
 		blockNum[0] = 0;
 		blockNum[1] = 1;
 		
+		boolean first = true;
+		
 		// Create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
 		printSend(readRequest);
@@ -201,54 +231,17 @@ public class Client {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
-		// Create writer and file with filename in Client folder
-		try { 
-			File f = new File(relativePath + "\\Client\\" + filename);
-			writer = new Writer(f.getPath(), false);
-		} catch (FileAlreadyExistsException fe) {
-			ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
-			sendErrorPacket(fileExists);
-			System.out.println("File already exists in Client folder.");
-			System.exit(1);
-			this.shutdown();
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		
+
 		// Process response from Server
 		while (true) {
 			// Server responds to a Read Request with a DATA packet (save to receivePacket)
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
 			// Receive packet from server
+			
+			
 			try {
 				sendReceiveSocket.receive(receivePacket);
-			}catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				if (sendPacket==null){
-					if (numberOfTimeout==6){
-						try {
-							sendReceiveSocket.send(readRequest);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
-				else {
-					if (numberOfTimeout==6){
-						try {
-							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}
-				}
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -262,6 +255,24 @@ public class Client {
 			System.out.println("Client: Received DATA block from server: ");
 			printStatus(receivePacket);
 			
+			if(first) {
+				// Create writer and file with filename in Client folder
+				try { 
+					File f = new File(relativePath + "\\Client\\" + filename);
+					if(f.exists()) {
+						ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
+						sendErrorPacket(fileExists);
+						System.out.println("File already exists in Client folder.");
+						shutdown();
+					}
+					writer = new Writer(f.getPath(), false);
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+			
+			else {
 			//removes first four bytes
 			byte[] cleanedData = new byte[receivePacket.getData().length - 4];
 			
@@ -276,14 +287,15 @@ public class Client {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
+			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(incomingData, incomingData.length);
 				receivePack(sendReceiveSocket, receivePacket);
 			}
-			
 			
 			try {
 				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), 23);
@@ -309,7 +321,7 @@ public class Client {
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
-		}
+		}}
 	}
 	
 	/**
@@ -398,11 +410,13 @@ public class Client {
 		try {        
 	         System.out.println("Waiting...");
 	         socket.receive(packet);
+	         printReceive(packet);	
+		} catch(SocketTimeoutException e){
+			return null;
 	    } catch (IOException e) {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		printReceive(packet);	
 		return packet;
 	}
 
@@ -521,6 +535,7 @@ public class Client {
 	
 	private void checkError(DatagramPacket packet) {
 		if(packet.getData()[1] == 5) {
+			System.out.println(Arrays.toString(packet.getData()));
 			byte[] message = new byte[packet.getData().length - 5];
 			for(int i = 0; i < message.length; i++) {
 				if(packet.getData()[4+i] == 0) break;
@@ -535,11 +550,13 @@ public class Client {
 	 * Prints information relating to a send request
 	 * @param packet, DatagramPacket that is used in the send request
 	 */
-	private void printSend(DatagramPacket packet){
+	private void printSend(DatagramPacket packet) {
 		System.out.println("Client: Sending packet");
-	    System.out.println("To host: " + packet.getAddress());
-	    System.out.println("Destination host port: " + packet.getPort());
-	    printStatus(packet);
+		if (!mode) {
+		    System.out.println("To host: " + packet.getAddress());
+		    System.out.println("Destination host port: " + packet.getPort());
+		    printStatus(packet);
+		}
 	}
 	
 	/**
@@ -548,26 +565,33 @@ public class Client {
 	 */
 	private void printReceive(DatagramPacket packet){
 		System.out.println("Client: Packet received");
-	    System.out.println("From host: " + packet.getAddress());
-	    System.out.println("Host port: " + packet.getPort());
-	    printStatus(packet);
+		if(!mode) {
+		    System.out.println("From host: " + packet.getAddress());
+		    System.out.println("Host port: " + packet.getPort());
+		    printStatus(packet);
+		}
 	}
 	
 	/**
 	 * Prints information relating to a any request
 	 * @param packet, DatagramPacket that is used in the request
 	 */
-	private void printStatus(DatagramPacket packet){
-	    int len = packet.getLength();
-	    System.out.println("Length: " + len);
-	    System.out.print("Containing: ");
-	    
-	    //prints the bytes of the packet
-	    System.out.println(Arrays.toString(packet.getData()));
-	    
-	    //prints the packet as text
-		String received = new String(packet.getData(),0,len);
-		System.out.println(received);
+	private void printStatus(DatagramPacket packet) {
+		if (!mode) {
+			byte[] data = packet.getData();
+			PacketType type = PacketType.getPacketType((int)data[1]);
+			int len = packet.getLength();
+			System.out.println("Length: " + len);
+			System.out.println("Packet Type: " + type);
+			System.out.print("Containing: ");
+
+			// prints the bytes of the packet
+			System.out.println(Arrays.toString(data));
+
+			// prints the packet as text
+			String received = new String(packet.getData(), 0, len);
+			System.out.println(received);
+		}
 	}
 	
 	/**
@@ -585,7 +609,7 @@ public class Client {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			sendErrorPacket(fileNotFound);
 			System.exit(1);
-		} catch (IOException e) {
+	    } catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -602,6 +626,10 @@ public class Client {
 		System.exit(1);
 	}
 	
+	/**
+	 * Sets the mode to 'Quiet' or 'Verbose'
+	 * @param mode	True for Quiet, False for Verbose
+	 */
 	private void setQuiet(boolean mode) {
 		this.mode = mode;	
 	}

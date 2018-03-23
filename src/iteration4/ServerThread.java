@@ -48,13 +48,6 @@ public class ServerThread extends Thread implements Runnable {
 		this.file = file;
 		this.path = path;
 		this.blockNumber = blockNumber;
-		try {
-			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(5000);
-		} catch (SocketException e1) {
-			e1.printStackTrace();
-			System.exit(1);
-		}
 	}
 	/**
 	 * Run handles the packets received from the host. 
@@ -62,11 +55,17 @@ public class ServerThread extends Thread implements Runnable {
 	 * packets are handled by the Thread
 	 */
 	public void run() {
-		// Check contents of request packet
+		try {
+			sendReceiveSocket = new DatagramSocket();
+			
+		} catch (SocketException e1) { 
+			e1.printStackTrace();
+			System.exit(1);
+		}
+		
 		byte[] data =  receivePacket.getData();
 		if (data[0] == 0 && data[1] == 1) handleRead(); // read request
 		else if (data[0] == 0 && data[1] == 2) handleWrite(); // write request
-		else {}
 	}
 	
 	private void handleWrite() {
@@ -77,7 +76,7 @@ public class ServerThread extends Thread implements Runnable {
 		// send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -96,19 +95,8 @@ public class ServerThread extends Thread implements Runnable {
 			// receive packet from Client
 			try { 
 				sendReceiveSocket.receive(receivePacket);
-			}catch (SocketTimeoutException se){
-				numberOfTimeout++;
-				
-				if (numberOfTimeout==2){
-					try {
-						sendReceiveSocket.send(sendPacket);
-						numberOfTimeout=0;
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-						}
-					}
-				}
+				checkError(receivePacket);
+			}
 			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -120,10 +108,11 @@ public class ServerThread extends Thread implements Runnable {
 				System.exit(1);
 			}
 			// create ACK packet to acknowledge DATA packet
-			response = createACKPacket();
 			blockNum = calcBlockNumber();
+			response = createACKPacket();
+			
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePacket.getPort());
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -149,7 +138,17 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	
 	private void handleRead() {
-		// response packet
+			
+			boolean received = false;
+			try {
+				sendReceiveSocket.setSoTimeout(10000);
+			} catch (SocketException e1) {
+				
+				e1.printStackTrace();
+				System.exit(1);
+			}
+			
+			// response packet
 			byte[] data = new byte[512 + 4];
 			byte[] response;
 				
@@ -173,27 +172,33 @@ public class ServerThread extends Thread implements Runnable {
 				response = new byte[512 + 4];
 				receivePacket = new DatagramPacket(response, response.length);
 				// receive packet from Client
+				
+				while(!received){
 				try { 
 					sendReceiveSocket.receive(receivePacket);
+					checkError(receivePacket);
+					received = true;
 				} catch (SocketTimeoutException se){
+					while(numberOfTimeout < 2){
 					numberOfTimeout++;
-					if (numberOfTimeout==6){
+					if (numberOfTimeout==2){
 						try {
 							sendReceiveSocket.send(sendPacket);
-							numberOfTimeout=0;
 						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
 						}
-					}
+					}}numberOfTimeout = 0;
 				}
 				catch(IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-				}
+					e.printStackTrace();
+					System.exit(1);
+				}}
+				
+				received = false;
 				// create DATA packet after receiving ACK packet
-				data = createDataPacket();
 				blockNum = calcBlockNumber();
+				data = createDataPacket();
 				try {
 					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
 				} catch (UnknownHostException ue) {
@@ -205,20 +210,22 @@ public class ServerThread extends Thread implements Runnable {
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
-				}					
-				// check if end of write
+				}				
+				
+				// check if end of read
 				int len = 0;
-				for(byte b: response){
+				//System.out.println(Arrays.toString(data));
+				for(byte b: data){
 					if(b == 0 && len > 4) break;
 					len++;
 				}
-					
+				//System.out.println(len);
+				
 				if(len < 512) {
 					break;
-						
 				}
-			sendReceiveSocket.close();
 			}
+			sendReceiveSocket.close();
 	}
 
 	/**
@@ -264,6 +271,19 @@ public class ServerThread extends Thread implements Runnable {
 		}
 
 		return blockNumber;
+	}
+	
+	private void checkError(DatagramPacket packet) {
+		System.out.println(Arrays.toString(packet.getData()));
+		if(packet.getData()[1] == 5) {
+			byte[] message = new byte[packet.getData().length - 5];
+			for(int i = 0; i < message.length; i++) {
+				if(packet.getData()[4+i] == 0) break;
+				message[i] = packet.getData()[4+i];
+			}
+			System.out.println("Error! " + new String(message,0,message.length));
+			System.exit(1);
+		}
 	}
 	
 	/**
@@ -323,30 +343,4 @@ public class ServerThread extends Thread implements Runnable {
 		return pack;
 	}
 	
-	/**
-	 *  Print information relating to send request 
-	 * @param dp datagram Packet being printed
-	 */
-	private void printSend(DatagramPacket dp) {
-		System.out.println("Server: Sending packet");
-		System.out.println("To host: " + dp.getAddress());
-		System.out.println("Destination Port: " + dp.getPort());
-		printInfo(dp);
-	}
-	
-	/**
-	 *  Print information relating to packet
-	 * @param dp datagram Packet being printed
-	 */
-	private void printInfo(DatagramPacket dp) {
-		int len = dp.getLength();
-		System.out.println("Length: " + len);
-		System.out.println("Containing: ");
-
-		// prints the contents of packet as bytes
-		System.out.println(Arrays.toString(dp.getData()));
-		// prints the contents of packet as a String
-		String contents = new String(dp.getData(),0,len);
-		System.out.println(contents);
-	}
 }

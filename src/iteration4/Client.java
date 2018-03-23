@@ -282,13 +282,14 @@ public class Client {
 						shutdown();
 					}
 					writer = new Writer(f.getPath(), false);
+					first = false;
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
 				}
 			}
+		
 			
-			else {
 			//removes first four bytes
 			byte[] cleanedData = new byte[receivePacket.getData().length - 4];
 			
@@ -344,7 +345,7 @@ public class Client {
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
-		}}
+		}
 	}
 	
 	/**

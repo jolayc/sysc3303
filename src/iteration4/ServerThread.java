@@ -1,7 +1,6 @@
 package iteration4;
 import java.net.*;
 import java.nio.file.AccessDeniedException;
-import java.nio.file.FileAlreadyExistsException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,19 +21,20 @@ public class ServerThread extends Thread implements Runnable {
 	
 	// String identifiers
 	private String message;
-	private String read = "READ";
-	private String write = "WRITE";
 	private File file;
 	
 	private byte[] path;
-	private int[] blockNum;
+	private int[] blockNum, oldNum;
 	private int numberOfTimeout=0;
 	private boolean done = false;
+	private boolean read = false;
+	private boolean write = false;
 	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
-	private final byte FOUR = 0x04;
+	private final byte FOUR = 0x0;
+	private final byte FIVE = 0x05;
 	/**
 	 * Constructor for ServerThread
 	 * @param receivePacket packet received from host
@@ -65,8 +65,14 @@ public class ServerThread extends Thread implements Runnable {
 		}
 		
 		byte[] data =  receivePacket.getData();
-		if (data[0] == 0 && data[1] == 1) handleRead(); // read request
-		else if (data[0] == 0 && data[1] == 2) handleWrite(); // write request
+		if (data[0] == 0 && data[1] == 1) {
+			read = true;
+			handleRead(); // read request
+		}
+		else if (data[0] == 0 && data[1] == 2) {
+			write = true;
+			handleWrite(); // write request
+		}
 	}
 	
 	private void handleWrite() {
@@ -95,15 +101,9 @@ public class ServerThread extends Thread implements Runnable {
 			receivePacket = new DatagramPacket(data, data.length);
 			// receive packet from Client
 			try { 
-				sendReceiveSocket.receive(receivePacket);
-				
-				if(!checkLegality(receivePacket)) {
-					ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
-					sendErrorPacket(illegalOperation);
-					System.out.println("Illegal TFTP Operation.");
-					System.exit(1);
-				}
+				sendReceiveSocket.receive(receivePacket);		
 				checkError(receivePacket);
+				checkLegality(receivePacket);
 			}
 			catch(IOException e) {
 				e.printStackTrace();
@@ -183,15 +183,9 @@ public class ServerThread extends Thread implements Runnable {
 				
 				while(!received){
 				try { 
-					sendReceiveSocket.receive(receivePacket);
-					
-					if(!checkLegality(receivePacket)) {
-						ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
-						sendErrorPacket(illegalOperation);
-						System.out.println("Illegal TFTP Operation.");
-						System.exit(1);
-					}
+					sendReceiveSocket.receive(receivePacket);	
 					checkError(receivePacket);
+					checkLegality(receivePacket);
 					received = true;
 				} catch (SocketTimeoutException se){
 					while(numberOfTimeout < 2){
@@ -288,10 +282,26 @@ public class ServerThread extends Thread implements Runnable {
 		}
 	}
 	
-	public boolean checkLegality(DatagramPacket packet) {
-		if(packet.getData()[0] != ZERO) return false;
-		if(packet.getData()[1] > FOUR) return false;
-		else return true;
+	public void checkLegality(DatagramPacket packet) {
+	
+		if(packet.getData()[0] != ZERO || packet.getData()[1] > FIVE) {
+			ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(illegalOperation);
+			System.out.println("Illegal TFTP Operation.");
+			System.exit(1);
+		}
+		if((((packet.getData()[2]*10) + packet.getData()[3]) > ((blockNumber[0] * 10) + blockNumber[1] + 1)) && write == true){
+			ErrorPacket illegalBlockNumber = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(illegalBlockNumber);
+			System.out.println("Server Received Illegal Block Number.");
+			System.exit(1);
+		}
+		if((((packet.getData()[2]*10) + packet.getData()[3]) > ((blockNumber[0] * 10) + blockNumber[1])) && read == true){
+			ErrorPacket illegalBlockNumber = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(illegalBlockNumber);
+			System.out.println("Server Received Illegal Block Number.");
+			System.exit(1);
+		}
 	}
 	
 	/**
@@ -311,6 +321,7 @@ public class ServerThread extends Thread implements Runnable {
 
 		return blockNumber;
 	}
+	
 	
 	private void checkError(DatagramPacket packet) {
 

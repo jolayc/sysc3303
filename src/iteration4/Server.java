@@ -74,13 +74,7 @@ public class Server implements Runnable {
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
 			
-			if(!checkLegality(receivePacket)) {
-				ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
-				sendErrorPacket(illegalOperation);
-				System.out.println("Server Received Illegal TFTP Operation.");
-				shutdown();
-			}
-			
+			checkLegality(receivePacket);
 			checkError(receivePacket);
  			rq = checkReadWrite(receivePacket.getData());
 			if (rq.equals(read)) {
@@ -241,10 +235,13 @@ public class Server implements Runnable {
 		}
 	}
 	
-	public boolean checkLegality(DatagramPacket packet) {
-		if(packet.getData()[0] != ZERO) return false;
-		if(packet.getData()[1] > TWO) return false;
-		else return true;
+	public void checkLegality(DatagramPacket packet) {
+		if(packet.getData()[0] != ZERO || packet.getData()[1] > TWO) {
+			ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(illegalOperation);
+			System.out.println("Server Received Illegal TFTP Operation.");
+			shutdown();
+		}
 	}
 	
 	/**

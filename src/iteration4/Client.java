@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.io.File;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -24,6 +25,7 @@ public class Client {
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x04;
+	private final byte FIVE = 0x05;
 	private Writer writer;
 	
 	private int[] blockNum;
@@ -103,6 +105,13 @@ public class Client {
 			while(!received){
 			try {
 				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+				
+				if(!checkLegality(receivePacket)) {
+					ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+					sendErrorPacket(illegalOperation);
+					System.out.println("Illegal TFTP Operation.");
+					shutdown();
+				}
 				checkError(receivePacket);
 				received = true;
 				// Socket Timeout handling
@@ -248,6 +257,13 @@ public class Client {
 				System.exit(1);
 			}
 			
+			if(!checkLegality(receivePacket)) {
+				ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+				sendErrorPacket(illegalOperation);
+				System.out.println("Client: Received Illegal TFTP Operation.");
+				shutdown();
+			}
+			
 			checkError(receivePacket);
 			// Check block number received
 			
@@ -283,9 +299,16 @@ public class Client {
 					cleanedData[i] = receivePacket.getData()[4+i];
 				}
 				writer.write(cleanedData);
+			} catch (AccessDeniedException e) {
+				ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+				sendErrorPacket(fileAccessDenied);
+				System.out.println("Access Violation.");
+				shutdown();
 			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+				ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
+				sendErrorPacket(diskFull);
+				System.out.println("The disk is full.");
+				shutdown();
 			}
 			
 			// Create and send ACK
@@ -533,6 +556,12 @@ public class Client {
 		return (a*10) + b;
 	}
 	
+	public boolean checkLegality(DatagramPacket packet) {
+		if(packet.getData()[0] != ZERO) return false;
+		if(packet.getData()[1] > FIVE) return false;
+		else return true;
+	}
+	
 	private void checkError(DatagramPacket packet) {
 		if(packet.getData()[1] == 5) {
 			System.out.println(Arrays.toString(packet.getData()));
@@ -605,6 +634,11 @@ public class Client {
 		Path path = Paths.get(s);
 		try {
 			bytes = Files.readAllBytes(path);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			shutdown();
 		} catch (NoSuchFileException fe) {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			sendErrorPacket(fileNotFound);

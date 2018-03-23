@@ -1,6 +1,7 @@
 package iteration4;
 
 import java.net.*;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -21,6 +22,8 @@ import java.util.Scanner;
  */
 public class Server implements Runnable {
 	
+	private final byte ZERO = 0x00;
+	private final byte TWO = 0x02;
 	private DatagramSocket receiveSocket;
 	private DatagramPacket receivePacket;
 	
@@ -70,6 +73,14 @@ public class Server implements Runnable {
 			// Grab the request and create a ServerThread to handle the transfer
 			receivePacket = new DatagramPacket(data, data.length);
 			receivePack(receiveSocket, receivePacket);
+			
+			if(!checkLegality(receivePacket)) {
+				ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+				sendErrorPacket(illegalOperation);
+				System.out.println("Server Received Illegal TFTP Operation.");
+				shutdown();
+			}
+			
 			checkError(receivePacket);
  			rq = checkReadWrite(receivePacket.getData());
 			if (rq.equals(read)) {
@@ -81,18 +92,26 @@ public class Server implements Runnable {
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+					
 					if(f.exists()) {
 						ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 						sendErrorPacket(errorPacket);
 						System.out.println("Server: Requested file already exists on machine!");
-						System.exit(1);
+						shutdown();
 					}
 					// for error checking
 					Writer w = new Writer(f.getPath(), false);
 					w.close();
+				} catch (AccessDeniedException e) {
+					ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+					sendErrorPacket(fileAccessDenied);
+					System.out.println("Access Violation.");
+					shutdown();
 				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
+					ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
+					sendErrorPacket(diskFull);
+					System.out.println("The disk is full.");
+					shutdown();
 				}
 				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
 			} else {}
@@ -192,6 +211,11 @@ public class Server implements Runnable {
 		// Try to convert File into byte[]
 		try {
 			bytes = Files.readAllBytes(path);
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			shutdown();
 		} catch (NoSuchFileException fe) {
 			ErrorPacket fileNotFound = new ErrorPacket(ErrorCode.FILE_NOT_FOUND);
 			System.out.println("File does not exist in server");
@@ -215,6 +239,12 @@ public class Server implements Runnable {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+	
+	public boolean checkLegality(DatagramPacket packet) {
+		if(packet.getData()[0] != ZERO) return false;
+		if(packet.getData()[1] > TWO) return false;
+		else return true;
 	}
 	
 	/**

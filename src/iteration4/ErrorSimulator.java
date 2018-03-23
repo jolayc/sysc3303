@@ -59,7 +59,7 @@ public class ErrorSimulator {
 	 * Sends the response to the client 
 	 */
 	private void receiveAndSend() {
-		if(type.name().equals("NORMAL_OPERATION")) {
+		if(type.name().equals("NORMAL_OPERATION") || type.name().equals("INVALID_OPCODE")) {
 			// buffers for send and receive packets
 			byte[] receiveData = new byte[512 + 4];
 			byte[] sendData = new byte[512 + 4];
@@ -83,6 +83,13 @@ public class ErrorSimulator {
 					transferring = false;
 				}
 				
+				if (type.name().equals("INVALID_OPCODE")){
+					if (receivePacket.getData()[1] == 1 && packet.name().equals("RRQ")) receivePacket.getData()[1] = 6;
+					if (receivePacket.getData()[1] == 2 && packet.name().equals("WRQ")) receivePacket.getData()[1] = 7;
+					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")) receivePacket.getData()[1] = 8;
+					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) receivePacket.getData()[1] = 9;
+				}
+				
 				// send packet from client to server
 				// first packet (the request) should be sent to port 69
 				try {
@@ -101,6 +108,11 @@ public class ErrorSimulator {
 					receivePack(receiveSocket, sendReceivePacket); 
 					
 					port = sendReceivePacket.getPort();
+					
+					if (type.name().equals("INVALID_OPCODE")){
+						if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")) receivePacket.getData()[1] = 8;
+						if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) receivePacket.getData()[1] = 9;
+					}
 					
 					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
 					sendPack(sendReceiveSocket, sendPacket);	
@@ -357,7 +369,7 @@ public class ErrorSimulator {
 		boolean validPacket = false;
 		
 		while(!validType) {
-			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet.");
+			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet, 4 for invalid TFTP opcode, 5 for invalid mode.");
 			while(!sc.hasNextInt()) sc.next();
 			int errorType = sc.nextInt();
 			if(errorType == 0) {
@@ -366,7 +378,7 @@ public class ErrorSimulator {
 				validPacket = true;
 				packet = PacketType.getPacketType(0);
 			}
-			if(errorType >= 0 && errorType <= 3) {//if errorType is a valid ordinal for PacketType
+			if(errorType >= 0 && errorType <= 5) {//if errorType is a valid ordinal for PacketType
 				type = ErrorType.getErrorType(errorType);
 				validType = true;
 			}
@@ -386,7 +398,7 @@ public class ErrorSimulator {
 		}
 		
 		
-		if(packet.ordinal() == 2 || packet.ordinal() == 3) {//to determine the nth. DATA or ACK packet
+		if((packet.ordinal() == 2 || packet.ordinal() == 3) && type.ordinal() != 4) {//to determine the nth. DATA or ACK packet
 			if(packet.ordinal() == 2 ) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
 			else System.out.println("ErrorSim: Enter the ACK packet that will be affected: ");
 			
@@ -420,7 +432,9 @@ public class ErrorSimulator {
 		NORMAL_OPERATION(0),
 		LOSE_PACKET(1),
 		DELAY_PACKET(2),
-		DUPLICATE_PACKET(3);
+		DUPLICATE_PACKET(3),
+		INVALID_OPCODE(4),
+		INVALID_MODE(5);
 		private int type;
 		
 		ErrorType(int type){
@@ -432,6 +446,8 @@ public class ErrorSimulator {
 			if(type == 1) return LOSE_PACKET;
 			if(type == 2) return DELAY_PACKET;
 			if(type == 3) return DUPLICATE_PACKET;
+			if(type == 4) return INVALID_OPCODE;
+			if(type == 5) return INVALID_MODE;
 			else throw new IllegalArgumentException("Invalid type");
 		}
 	}

@@ -1,5 +1,6 @@
 package iteration4;
 import java.net.*;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.io.File;
 import java.io.IOException;
@@ -95,6 +96,13 @@ public class ServerThread extends Thread implements Runnable {
 			// receive packet from Client
 			try { 
 				sendReceiveSocket.receive(receivePacket);
+				
+				if(!checkLegality(receivePacket)) {
+					ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+					sendErrorPacket(illegalOperation);
+					System.out.println("Illegal TFTP Operation.");
+					System.exit(1);
+				}
 				checkError(receivePacket);
 			}
 			catch(IOException e) {
@@ -176,6 +184,13 @@ public class ServerThread extends Thread implements Runnable {
 				while(!received){
 				try { 
 					sendReceiveSocket.receive(receivePacket);
+					
+					if(!checkLegality(receivePacket)) {
+						ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+						sendErrorPacket(illegalOperation);
+						System.out.println("Illegal TFTP Operation.");
+						System.exit(1);
+					}
 					checkError(receivePacket);
 					received = true;
 				} catch (SocketTimeoutException se){
@@ -243,8 +258,15 @@ public class ServerThread extends Thread implements Runnable {
 			}
 			writer.write(cleanedData);
 			writer.close();
+		} catch (AccessDeniedException e) {
+			ErrorPacket fileAccessDenied = new ErrorPacket(ErrorCode.ACCESS_VIOLATION);
+			sendErrorPacket(fileAccessDenied);
+			System.out.println("Access Violation.");
+			System.exit(1);
 		} catch (IOException e) {
-			e.printStackTrace();
+			ErrorPacket diskFull = new ErrorPacket(ErrorCode.DISK_FULL_OR_ALLOCATION_EXCEEDED);
+			sendErrorPacket(diskFull);
+			System.out.println("The disk is full.");
 			System.exit(1);
 		}
 		if (data.length < 516) {
@@ -254,6 +276,23 @@ public class ServerThread extends Thread implements Runnable {
 		}
 	}
 	
+	
+	private void sendErrorPacket(ErrorPacket error) {
+		DatagramPacket errorPacket;
+		try {
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), 23);
+			sendReceiveSocket.send(errorPacket);
+		} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+		}
+	}
+	
+	public boolean checkLegality(DatagramPacket packet) {
+		if(packet.getData()[0] != ZERO) return false;
+		if(packet.getData()[1] > FOUR) return false;
+		else return true;
+	}
 	
 	/**
 	 * increments block number 
@@ -274,7 +313,7 @@ public class ServerThread extends Thread implements Runnable {
 	}
 	
 	private void checkError(DatagramPacket packet) {
-		System.out.println(Arrays.toString(packet.getData()));
+
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
 			for(int i = 0; i < message.length; i++) {

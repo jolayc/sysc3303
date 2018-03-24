@@ -32,6 +32,10 @@ public class Client {
 	private int numberOfTimeout=0;
 	private byte[] fileAsBytes;
 	
+	private final int simPort = 23;
+	private int receivePort;
+	
+	
 	private boolean mode;
 	
 	private DatagramSocket sendReceiveSocket;
@@ -64,6 +68,8 @@ public class Client {
 	 * @param filename Name of requested file to be written to server
 	 */
 	public void sendWrite(String filename) {
+		
+		boolean first = true;
 		
 		try {
 			sendReceiveSocket.setSoTimeout(10000);
@@ -99,19 +105,35 @@ public class Client {
 			// Server responds to Write request with an ACK
 			serverACK = new byte[516];
 			received = false;
-			receivePacket = new DatagramPacket(serverACK, serverACK.length);
-
+			receivePacket = new DatagramPacket(serverACK, serverACK.length);;
+		
+			
 			// Receive ACK packet from Server
 			while(!received){
 			try {
 				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
 				
+				//check for legality
 				if(!checkLegality(receivePacket)) {
 					ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 					sendErrorPacket(illegalOperation);
 					System.out.println("Illegal TFTP Operation.");
 					shutdown();
 				}
+				
+				if(first){
+					receivePort = receivePacket.getPort();
+					first = false;
+				}
+				
+				//check for port
+				if(receivePacket.getPort() != receivePort){
+					ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
+					sendErrorPacket(wrongPort);
+					System.out.println("Packet received from unknown port.");
+					shutdown();
+				}
+				
 				checkError(receivePacket);
 				received = true;
 				// Socket Timeout handling
@@ -158,7 +180,7 @@ public class Client {
 
 			// Create and Send DATA block to Server
 			try {
-				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -176,6 +198,7 @@ public class Client {
 				len++;
 			}		
 			
+			//end of transfer
 			if(len < 512) {
 				try {
 					sendReceiveSocket.setSoTimeout(200);
@@ -185,6 +208,15 @@ public class Client {
 				}
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
+				
+				//check for port
+				if(receivePacket.getPort() != receivePort){
+					ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
+					sendErrorPacket(wrongPort);
+					System.out.println("Packet recevied from unknown port.");
+					shutdown();
+				}
+				
 				sendEmptyDataPacket();
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
@@ -203,7 +235,7 @@ public class Client {
 			data[i] = 0;
 		}
 		try {
-			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -257,6 +289,17 @@ public class Client {
 				System.exit(1);
 			}
 			
+			if(first) receivePort = receivePacket.getPort();
+			
+			//check for port
+			if(receivePacket.getPort() != receivePort){
+				ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
+				sendErrorPacket(wrongPort);
+				System.out.println("Packet received from unknown port.");
+				shutdown();
+			}
+			
+			//check for legality
 			if(!checkLegality(receivePacket)) {
 				ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 				sendErrorPacket(illegalOperation);
@@ -322,7 +365,7 @@ public class Client {
 			}
 			
 			try {
-				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -341,6 +384,7 @@ public class Client {
 				len++;
 			}
 			
+			//end of transfer
 			if(len < 512) {
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
@@ -506,7 +550,7 @@ public class Client {
 	public DatagramPacket createSendPacket(byte[] rq){
 		DatagramPacket send = null;
 		try {
-			send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), 23);
+			send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), simPort);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -526,7 +570,7 @@ public class Client {
 	public void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
-			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), 23);
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), simPort);
 			sendReceiveSocket.send(errorPacket);
 		} catch (IOException e) {
 				e.printStackTrace();
@@ -553,20 +597,44 @@ public class Client {
 		return blockNum;
 	}
 	
+	/**
+	 * Get integer value of block number
+	 * @param a, byte[2] in packet
+	 * @param b, byte[3] in packet
+	 * @return int
+	 */
 	private int getBlockIntegerValue(int a, int b) {
 		return (a*10) + b;
 	}
 	
+	/**
+	 * Checks legality of packet
+	 * @param packet, datagram packet that will be checked
+	 * @return true if legal, false if not
+	 */
 	public boolean checkLegality(DatagramPacket packet) {
+		
+		//if first byte in packet is not zero
 		if(packet.getData()[0] != ZERO) return false;
+		
+		//if second byte in packet is greater than 5
 		if(packet.getData()[1] > FIVE) return false;
+		
 		else return true;
 	}
 	
+	/**
+	 * Checks if the packet is an error packet
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	private void checkError(DatagramPacket packet) {
+		
+		//if packet is an error packet
 		if(packet.getData()[1] == 5) {
 			System.out.println(Arrays.toString(packet.getData()));
 			byte[] message = new byte[packet.getData().length - 5];
+			
+			//extract message
 			for(int i = 0; i < message.length; i++) {
 				if(packet.getData()[4+i] == 0) break;
 				message[i] = packet.getData()[4+i];

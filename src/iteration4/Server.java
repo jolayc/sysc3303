@@ -127,9 +127,18 @@ public class Server implements Runnable {
 		return rq;
 	}
 	
+	/**
+	 * Checks if there if packet is an error packet
+	 * If it is, extract message
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	private void checkError(DatagramPacket packet) {
+		
+		//if packet is an error packet
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
+			
+			//extract message
 			for(int i = 0; i < message.length; i++) {
 				if(packet.getData()[4+i] == 0) break;
 				message[i] = packet.getData()[4+i];
@@ -222,6 +231,10 @@ public class Server implements Runnable {
 		return bytes;
 	}
 	
+	/**
+	 * Sends error packet to error simulator
+	 * @param error, ErrorPacket to be sent
+	 */
 	public void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
@@ -235,8 +248,12 @@ public class Server implements Runnable {
 		}
 	}
 	
+	/**
+	 * Checks the legality of a packet
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	public void checkLegality(DatagramPacket packet) {
-		if(packet.getData()[0] != ZERO || packet.getData()[1] > TWO) {
+		if(packet.getData()[0] != ZERO || packet.getData()[1] > TWO) {	
 			ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 			sendErrorPacket(illegalOperation);
 			System.out.println("Server Received Illegal TFTP Operation.");

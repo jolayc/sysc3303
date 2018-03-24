@@ -26,6 +26,7 @@ public class ServerThread extends Thread implements Runnable {
 	private byte[] path;
 	private int[] blockNum, oldNum;
 	private int numberOfTimeout=0;
+	private int receivePort;
 	private boolean done = false;
 	private boolean read = false;
 	private boolean write = false;
@@ -35,6 +36,7 @@ public class ServerThread extends Thread implements Runnable {
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x0;
 	private final byte FIVE = 0x05;
+	private final int simPort = 23;
 	/**
 	 * Constructor for ServerThread
 	 * @param receivePacket packet received from host
@@ -65,6 +67,8 @@ public class ServerThread extends Thread implements Runnable {
 		}
 		
 		byte[] data =  receivePacket.getData();
+		receivePort = receivePacket.getPort();
+		
 		if (data[0] == 0 && data[1] == 1) {
 			read = true;
 			handleRead(); // read request
@@ -75,6 +79,9 @@ public class ServerThread extends Thread implements Runnable {
 		}
 	}
 	
+	/**
+	 * For handling write requests
+	 */
 	private void handleWrite() {
 		// response packet
 		byte[] response = new byte[512 + 4];
@@ -83,7 +90,7 @@ public class ServerThread extends Thread implements Runnable {
 		// send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), simPort);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -97,21 +104,18 @@ public class ServerThread extends Thread implements Runnable {
 		
 		// process DATA packets
 		while (true) {
+			
 			data = new byte[512 + 4];
 			receivePacket = new DatagramPacket(data, data.length);
 			// receive packet from Client
 			try { 
-				sendReceiveSocket.receive(receivePacket);		
+				sendReceiveSocket.receive(receivePacket);	
+				checkPort(receivePacket);
 				checkError(receivePacket);
 				checkLegality(receivePacket);
+				handleData(receivePacket.getData());
 			}
 			catch(IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-			try {
-				handleData(receivePacket.getData());
-			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
@@ -120,7 +124,7 @@ public class ServerThread extends Thread implements Runnable {
 			response = createACKPacket();
 			
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -145,6 +149,9 @@ public class ServerThread extends Thread implements Runnable {
 		sendReceiveSocket.close();
 	}
 	
+	/**
+	 * For handling read requests
+	 */
 	private void handleRead() {
 			
 			boolean received = false;
@@ -163,7 +170,7 @@ public class ServerThread extends Thread implements Runnable {
 			// send DATA to read request
 			data = createDataPacket();
 			try {
-				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -184,6 +191,7 @@ public class ServerThread extends Thread implements Runnable {
 				while(!received){
 				try { 
 					sendReceiveSocket.receive(receivePacket);	
+					checkPort(receivePacket);
 					checkError(receivePacket);
 					checkLegality(receivePacket);
 					received = true;
@@ -209,7 +217,7 @@ public class ServerThread extends Thread implements Runnable {
 				blockNum = calcBlockNumber();
 				data = createDataPacket();
 				try {
-					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
+					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
 				} catch (UnknownHostException ue) {
 					ue.printStackTrace();
 					System.exit(1);
@@ -270,32 +278,44 @@ public class ServerThread extends Thread implements Runnable {
 		}
 	}
 	
-	
+	/**
+	 * Sends an error packet
+	 * @param error, ErrorPacket that wil be sent
+	 */
 	private void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
-			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), 23);
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), simPort);
 			sendReceiveSocket.send(errorPacket);
 		} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	
+	/**
+	 * Checks the legality of a packet
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	public void checkLegality(DatagramPacket packet) {
 	
+		//checks for bad opcode
 		if(packet.getData()[0] != ZERO || packet.getData()[1] > FIVE) {
 			ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 			sendErrorPacket(illegalOperation);
-			System.out.println("Illegal TFTP Operation.");
+			System.out.println("Server Recevied Illegal TFTP Operation.");
 			System.exit(1);
 		}
+		
+		//checks for wrong block number for packets in a write
 		if((((packet.getData()[2]*10) + packet.getData()[3]) > ((blockNumber[0] * 10) + blockNumber[1] + 1)) && write == true){
 			ErrorPacket illegalBlockNumber = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 			sendErrorPacket(illegalBlockNumber);
 			System.out.println("Server Received Illegal Block Number.");
 			System.exit(1);
 		}
+		
+		//checks for wrong block number for packets in a write
 		if((((packet.getData()[2]*10) + packet.getData()[3]) > ((blockNumber[0] * 10) + blockNumber[1])) && read == true){
 			ErrorPacket illegalBlockNumber = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
 			sendErrorPacket(illegalBlockNumber);
@@ -311,10 +331,12 @@ public class ServerThread extends Thread implements Runnable {
 	
 	private int[] calcBlockNumber(){
 
+		//add number in tenth's place
 		if(blockNumber[1] == 9) {
 			blockNumber[0]++;
 			blockNumber[1] = 0;
 		}
+		
 		else{
 			blockNumber[1]++;
 		}
@@ -322,16 +344,38 @@ public class ServerThread extends Thread implements Runnable {
 		return blockNumber;
 	}
 	
-	
+	/**
+	 * checks if the packet is an error packet
+	 * if it is, it then prints it's message
+	 * @param packet, DatagramPacket that will be checked
+	 */
 	private void checkError(DatagramPacket packet) {
 
+		//check if error packet
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
+			
+			//extracting message
 			for(int i = 0; i < message.length; i++) {
 				if(packet.getData()[4+i] == 0) break;
 				message[i] = packet.getData()[4+i];
 			}
 			System.out.println("Error! " + new String(message,0,message.length));
+			System.exit(1);
+		}
+	}
+	
+	/**
+	 * checks if the port where the receive packet came from is known
+	 * @param receive, the DatagramPacket whose port will be checked
+	 */
+	private void checkPort(DatagramPacket receive){
+
+		//if the port is from an unknown source
+		if(receive.getPort() != receivePort){
+			ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
+			sendErrorPacket(wrongPort);
+			System.out.println("Packet received from unknown port.");
 			System.exit(1);
 		}
 	}
@@ -381,6 +425,11 @@ public class ServerThread extends Thread implements Runnable {
 		return data;
 	}
 	
+	/**
+	 * Creates an acknowledge packet containing the number in block
+	 * @param block, int[] containing clock number
+	 * @return byte[4] containing acknowledge packet
+	 */
 	public byte[] createACKPacket(int[] block) {
 		byte[] pack = new byte[4];
 		// {0, 4} op code

@@ -20,7 +20,7 @@ public class ErrorSimulator {
 	private final byte THREE = 3;
 	private final byte FOUR = 4;
 	
-	private DatagramSocket receiveSocket, sendReceiveSocket;
+	private DatagramSocket receiveSocket, wrongPortSocket, sendReceiveSocket;
 	private DatagramPacket receivePacket, sendReceivePacket, sendPacket;
 	private DatagramPacket simulatorPacket;
 	private static ErrorType type;
@@ -39,6 +39,7 @@ public class ErrorSimulator {
 		try {
 			//Constructs a socket to receive packets bounded to port 23
 			receiveSocket = new DatagramSocket(23);
+			wrongPortSocket = new DatagramSocket(24);
 			
 			//Constructs a socket to send packets from any available port
 			sendReceiveSocket = new DatagramSocket();
@@ -59,7 +60,7 @@ public class ErrorSimulator {
 	 * Sends the response to the client 
 	 */
 	private void receiveAndSend() {
-		if(type.name().equals("NORMAL_OPERATION") || type.name().equals("INVALID_OPCODE") || type.name().equals("INVALID_BLOCK_NUMBER")) {
+		if(type.name().equals("NORMAL_OPERATION") || type.name().equals("INVALID_OPCODE") || type.name().equals("INVALID_BLOCK_NUMBER") || type.name().equals("UNKNOWN_PORT")) {
 			// buffers for send and receive packets
 			byte[] receiveData = new byte[512 + 4];
 			byte[] sendData = new byte[512 + 4];
@@ -75,6 +76,7 @@ public class ErrorSimulator {
 			while(true) {
 				// CLIENT TO SERVER
 				// receive packet from client
+				
 				receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				receivePack(receiveSocket, receivePacket); // receive packets at port 23
 				
@@ -103,12 +105,22 @@ public class ErrorSimulator {
 					e1.printStackTrace();
 					System.exit(1);
 				}
+				if(type.name().equals("UNKNOWN_PORT")){
+					
+					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+						sendPack(wrongPortSocket, sendReceivePacket);
+						type = ErrorType.getErrorType(0);
+					}
+					if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK"))	{
+						sendPack(wrongPortSocket, sendReceivePacket);
+						type = ErrorType.getErrorType(0);
+					}
+				}
 				sendPack(sendReceiveSocket, sendReceivePacket);
 				printSend(sendReceivePacket);
 				
 				// SERVER TO CLIENT
 				if (transferring) {
-		
 					sendReceivePacket = new DatagramPacket(sendData, sendData.length);
 					receivePack(receiveSocket, sendReceivePacket); 
 					
@@ -120,6 +132,18 @@ public class ErrorSimulator {
 					}
 					
 					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+					
+					if(type.name().equals("UNKNOWN_PORT")){
+						
+						if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
+						if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
+					}
 					sendPack(sendReceiveSocket, sendPacket);	
 					
 					// Check if end of transfer
@@ -135,6 +159,10 @@ public class ErrorSimulator {
 		}
 	}
 	
+	/**
+	 * Sends a duplicate packet
+	 * @param socket, DatagramSocket where the duplicate packet will be sent
+	 */
 	private void simulateDuplicatePacket(DatagramSocket socket) {
 
 		DatagramPacket duplicate = simulatorPacket;
@@ -147,6 +175,9 @@ public class ErrorSimulator {
 		}
 	}
 	
+	/**
+	 * Runs a delay
+	 */
 	private void simulateDelayPacket() {
 		System.out.println("ErrorSim: Delaying packet...");
 		try {
@@ -259,6 +290,11 @@ public class ErrorSimulator {
 			}	
 	}
 
+	/**
+	 * Checks if the packet will have an i/o error 
+	 * @param pack, DatagranPacket that will be checked
+	 * @return true if error, false if not
+	 */
 	private boolean checkError(DatagramPacket pack) {
 		
 		if(pack.getData()[1] == THREE || pack.getData()[1] == FOUR) {
@@ -324,7 +360,6 @@ public class ErrorSimulator {
 	         e.printStackTrace();
 	         System.exit(1);
 	    }
-		
 		printReceive(packet);
 	}
 	
@@ -374,7 +409,7 @@ public class ErrorSimulator {
 		boolean validPacket = false;
 		
 		while(!validType) {
-			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet, 4 for invalid TFTP opcode, 5 for invalid block number.");
+			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet, 4 for invalid TFTP opcode, 5 for invalid block number, 6 for unknown port.");
 			while(!sc.hasNextInt()) sc.next();
 			int errorType = sc.nextInt();
 			if(errorType == 0) {
@@ -383,7 +418,7 @@ public class ErrorSimulator {
 				validPacket = true;
 				packet = PacketType.getPacketType(0);
 			}
-			if(errorType >= 0 && errorType <= 5) {//if errorType is a valid ordinal for PacketType
+			if(errorType >= 0 && errorType <= 6) {//if errorType is a valid ordinal for PacketType
 				type = ErrorType.getErrorType(errorType);
 				validType = true;
 			}
@@ -403,7 +438,7 @@ public class ErrorSimulator {
 		}
 		
 		
-		if((packet.ordinal() == 2 || packet.ordinal() == 3) && !(type.ordinal() == 4 || type.ordinal() == 5)) {//to determine the nth. DATA or ACK packet
+		if((packet.ordinal() == 2 || packet.ordinal() == 3) && !(type.ordinal() == 4 || type.ordinal() == 5 || type.ordinal() == 6)) {//to determine the nth. DATA or ACK packet
 			if(packet.ordinal() == 2 ) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
 			else System.out.println("ErrorSim: Enter the ACK packet that will be affected: ");
 			
@@ -439,7 +474,8 @@ public class ErrorSimulator {
 		DELAY_PACKET(2),
 		DUPLICATE_PACKET(3),
 		INVALID_OPCODE(4),
-		INVALID_BLOCK_NUMBER(5);
+		INVALID_BLOCK_NUMBER(5),
+		UNKNOWN_PORT(6);
 		private int type;
 		
 		ErrorType(int type){
@@ -453,6 +489,7 @@ public class ErrorSimulator {
 			if(type == 3) return DUPLICATE_PACKET;
 			if(type == 4) return INVALID_OPCODE;
 			if(type == 5) return INVALID_BLOCK_NUMBER;
+			if(type == 6) return UNKNOWN_PORT;
 			else throw new IllegalArgumentException("Invalid type");
 		}
 	}

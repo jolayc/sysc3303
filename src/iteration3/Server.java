@@ -38,7 +38,6 @@ public class Server implements Runnable {
 	
 	private int[] blockNumber;
 
-
 	private File f;
 	
 	/**
@@ -50,7 +49,6 @@ public class Server implements Runnable {
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
-			blockNumber = new int[2];
 			rq = "NONE";
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -79,6 +77,7 @@ public class Server implements Runnable {
 				blockNumber[1] = 1;
 				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
 			} else if (rq.equals(write)) {
+				blockNumber = new int[2];
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
@@ -115,14 +114,19 @@ public class Server implements Runnable {
 		return rq;
 	}
 	
+	/**
+	 * 
+	 * @param packet
+	 */
 	private void checkError(DatagramPacket packet) {
 		if(packet.getData()[1] == 5) {
 			byte[] message = new byte[packet.getData().length - 5];
 			for(int i = 0; i < message.length; i++) {
 				if(packet.getData()[4+i] == 0) break;
-				message[i] = packet.getData()[4+i];
+				message[i] = packet.getData()[4 + i];
 			}
 			System.out.println("Error! " + new String(message,0,message.length));
+			
 			shutdown();
 		}
 	}
@@ -232,7 +236,6 @@ public class Server implements Runnable {
 		} catch (IOException e) {
 			System.exit(1);
 		}
-		
 	}
 	
 	/**

@@ -68,18 +68,23 @@ public class Client {
 			e2.printStackTrace();
 			System.exit(1);
 		}
-		
-		System.out.println("Client: Requested to write to server with filename: " + filename);
-		byte[] serverACK;
-		boolean received = false;
 
+		System.out.println("Client: Requested to write to server with filename: " + filename);
+		// buffer for server ACK
+		byte[] serverACK;
+		
+		// status flags
+		boolean received = false; // received ACK from Server
+		boolean sentEmptyData = false; // Empty DATA packet has been sent
+		boolean finished = false;
+		
 		blockNum = new int[2];
 		blockNum[0] = 0;
 		blockNum[1] = 0;
 
 		// Prompt user to provide path of file and convert to byte[]
 		fileAsBytes = toBytes(filename);
-		
+
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		try {
@@ -91,59 +96,78 @@ public class Client {
 		// Print the request packet being sent
 		printSend(writeRequest);
 
-		//Process response from Server
-		while(true) {
+		// Process response from Server
+		while (true) {
+			
 			// Server responds to Write request with an ACK
 			serverACK = new byte[4];
 			received = false;
 			receivePacket = new DatagramPacket(serverACK, serverACK.length);
 
 			// Receive ACK packet from Server
-			while(!received){
-			try {
-				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
-				received = true;
-				// Socket Timeout handling
-			} catch (SocketTimeoutException se){
-				while(numberOfTimeout < 2) {
-					numberOfTimeout++;
-					System.out.println("Client: Timeout (" + numberOfTimeout + ")");
-					if (sendPacket == null){
-						if (numberOfTimeout == 2){
-							try {
-								// Retransmit
-								sendReceiveSocket.send(writeRequest);
-							} catch (IOException e) {
-								e.printStackTrace();
-								System.exit(1);
+			// and handle Timeouts
+			while (!received) {
+				try {
+					sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+					received = true;
+					// Socket Timeout handling
+				} catch (SocketTimeoutException se) {
+					while (numberOfTimeout < 2) {
+						numberOfTimeout++;
+						System.out.println("Client: Timeout (" + numberOfTimeout + ")");
+						if (sendPacket == null) {
+							if (numberOfTimeout == 2) {
+								try {
+									// Retransmit
+									sendReceiveSocket.send(writeRequest);
+								} catch (IOException e) {
+									e.printStackTrace();
+									System.exit(1);
+								}
 							}
-						}
-					} else {
-						if (numberOfTimeout == 2) {
-							try {
-								sendReceiveSocket.send(sendPacket);
-							} catch (IOException e) {
-								e.printStackTrace();
-								System.exit(1);
+						} else {
+							if (numberOfTimeout == 2) {
+								try {
+									sendReceiveSocket.send(sendPacket);
+								} catch (IOException e) {
+									e.printStackTrace();
+									System.exit(1);
+								}
 							}
 						}
 					}
-				} numberOfTimeout = 0;
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}}
+					numberOfTimeout = 0;
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
 			
 			printReceive(receivePacket);
+			
+			// if empty DATA block has been sent
+			// it has been acknowledged at this point, so break
+			if(sentEmptyData) break;
+			
 			calcBlockNumber();
+			
 			// Duplicate packet checking
-			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+			if (getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
 			}
 
 			// Send a DATA Block to write
-			byte[] dataBlock = createDataPacket();
+			byte[] dataBlock;
+			if(!finished) {
+				// still sending DATA blocks
+				dataBlock = createDataPacket();
+			} else {
+				// finished sending DATA blocks
+				// send an empty block
+				dataBlock = createEmptyDataPacket();
+				sentEmptyData = true;
+			}
 
 			// Create and Send DATA block to Server
 			try {
@@ -152,34 +176,37 @@ public class Client {
 				e1.printStackTrace();
 				System.exit(1);
 			}
+			
 			try {
-				sendReceiveSocket.send(sendPacket); // Client Port to Port 23 (Error Sim)
+				sendReceiveSocket.send(sendPacket); // Client Port to Port 23 (Error Simulator)
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			// check if end of write
-			int len = 0;
-			for(byte b: dataBlock){
-				if(b == 0 && len > 4) break;
-				len++;
-			}		
 			
-			if(len < 512) {
-				try {
-					sendReceiveSocket.setSoTimeout(200);
-				} catch (SocketException e) {
-					e.printStackTrace();
-					System.exit(1);
+			// Check length of data packet sent
+			if(!sentEmptyData) {
+				int len = 0;
+				for (byte b : dataBlock) {
+					if (b == 0 && len > 4) break;
+					len++;
 				}
-				receivePacket = new DatagramPacket(serverACK, serverACK.length);
-				receivePack(sendReceiveSocket, receivePacket);
-				sendEmptyDataPacket();
-				receivePack(sendReceiveSocket, receivePacket);
-				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
-				break;
+				if (len < 512) finished = true;
 			}
 		}
+	}
+	
+	/**
+	 * 
+	 */
+	private byte[] createEmptyDataPacket() {
+		byte[] data = new byte[516];
+		data[0] = 0;
+		data[1] = 3;
+		for (int i = 2; i < data.length; i++) {
+			data[i] = 0;
+		}
+		return data;
 	}
 	
 	/**
@@ -285,6 +312,7 @@ public class Client {
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
+			
 			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(incomingData, incomingData.length);

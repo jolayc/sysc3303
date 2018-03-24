@@ -10,7 +10,7 @@ import java.util.Arrays;
  * A server thread that will handle read/write requests received by server, sent by client 
  */
 
-public class ServerThread extends Thread implements Runnable {
+public class ServerThread implements Runnable {
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
@@ -57,7 +57,6 @@ public class ServerThread extends Thread implements Runnable {
 	public void run() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
-			
 		} catch (SocketException e1) { 
 			e1.printStackTrace();
 			System.exit(1);
@@ -66,6 +65,7 @@ public class ServerThread extends Thread implements Runnable {
 		byte[] data =  receivePacket.getData();
 		if (data[0] == 0 && data[1] == 1) handleRead(); // read request
 		else if (data[0] == 0 && data[1] == 2) handleWrite(); // write request
+		sendReceiveSocket.close();
 	}
 	
 	/**
@@ -75,7 +75,10 @@ public class ServerThread extends Thread implements Runnable {
 		// response packet
 		byte[] response = new byte[512 + 4];
 		byte[] data;
+		
+		// status flags
 		boolean finished = false;
+		boolean emptyDataReceived = false;
 
 		// send ACK to write request
 		response = createACKPacket();
@@ -105,24 +108,28 @@ public class ServerThread extends Thread implements Runnable {
 				System.exit(1);
 			}
 			
-			// check if empty DATA packet (finished transferring)
-			// e.g. receivePacket = [0, 3, 0 ... 0]
-			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[2] == 0 && receivePacket.getData()[515] == 0) {
+			// empty DATA block is received so transfer is over after final ACK
+			if(emptyDataReceived) {
 				finished = true;
 			}
 			
-			if (!finished) {
-				try {
-					handleData(receivePacket.getData());
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
+			// check if empty DATA packet (finished transferring)
+			// e.g. receivePacket = [0, 3, 0 ... 0]
+			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[2] == 0 && receivePacket.getData()[515] == 0) {
+				emptyDataReceived = true;
+			}
+			
+			try {
+				handleData(receivePacket.getData());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
 			
 			// create ACK packet to acknowledge DATA packet
 			blockNum = calcBlockNumber();
 			response = createACKPacket();
+			
 			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(data, data.length);
@@ -142,12 +149,11 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
 			// check if finished
-			if(finished) {
-				break;
-			}
+			if(finished) break;
 		}
-		sendReceiveSocket.close();
+		//sendReceiveSocket.close();
 	}
 	
 	private void handleRead() {
@@ -240,7 +246,6 @@ public class ServerThread extends Thread implements Runnable {
 			}
 
 			if (len < 512) {
-				
 				break;
 			}
 		}
@@ -296,6 +301,22 @@ public class ServerThread extends Thread implements Runnable {
 			System.exit(1);
 		}
 	}
+	
+	/**
+	 * Receive a packet being sent
+	 * @param sock DatagramSocket ported
+	 * @param dp DatagramPacket being sent
+	 */
+	private void receivePack(DatagramSocket sock, DatagramPacket dp) {
+		try {
+			sock.receive(dp);
+		} catch (SocketException se) {
+			System.out.println("Socket is closed");
+		} catch (IOException e) {
+			System.exit(1);
+		}
+	}
+	
 	
 	/**
 	 * increments block number 

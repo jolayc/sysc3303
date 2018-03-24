@@ -64,8 +64,8 @@ public class ErrorSimulator {
 			byte[] receiveData = new byte[512 + 4];
 			byte[] sendData = new byte[512 + 4];
 			
-			// status flag
-			boolean transferring = true;
+			// status flags
+			boolean emptyDataSent = false; // used to check if an empty DATA packet was sent during a transfer
 			
 			// port number
 			// 69 for RQ, 23 for DATA and ACK
@@ -76,12 +76,18 @@ public class ErrorSimulator {
 				// CLIENT TO SERVER
 				// receive packet from client
 				receivePacket = new DatagramPacket(receiveData, receiveData.length);
-				receivePack(receiveSocket, receivePacket); // receive packets at port 23
+				receivePack(receiveSocket, receivePacket); // receive packets from port 23
 				
-				// Check if finished transferring
-//				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[4] == 0) {
-//					transferring = false;
-//				}
+				// swap ports back to 69 to handle requests after finishing a transfer
+				if(emptyDataSent) {
+					port = 69;
+					emptyDataSent = false;
+				}
+				
+				// check if empty DATA packet was sent
+				if (receiveData[1] == 3 && receiveData[3] == 0 && receiveData[515] == 0) {
+					emptyDataSent = true;
+				}
 				
 				// send packet from client to server
 				// first packet (the request) should be sent to port 69
@@ -91,30 +97,20 @@ public class ErrorSimulator {
 					e1.printStackTrace();
 					System.exit(1);
 				}
+				
 				sendPack(sendReceiveSocket, sendReceivePacket);
 				printSend(sendReceivePacket);
 				
-				// check if finished writing
-				// looking for empty DATA packet e.g. [0, 3, 0 ... 0]
-				// packet type is 3 (data) and first and last element are zeroes
-				if (sendReceivePacket.getData()[1] == 0 && sendReceivePacket.getData()[2] == 0 && sendReceivePacket.getData()[515] == 0) {
-					port = 69; // set port back to 69 so Error Simulator can accept requests from Client
-					
-				}
-				
 				// SERVER TO CLIENT
-				if (transferring) {
-					sendReceivePacket = new DatagramPacket(sendData, sendData.length);
-					receivePack(receiveSocket, sendReceivePacket); 
-					
-					port = sendReceivePacket.getPort();
-					
-					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
-					sendPack(sendReceiveSocket, sendPacket);	
-					printSend(sendPacket);
-					// Check if end of transfer
-				}
-			}	
+				sendReceivePacket = new DatagramPacket(sendData, sendData.length);
+				receivePack(receiveSocket, sendReceivePacket);
+				
+				port = sendReceivePacket.getPort();
+				
+				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+				sendPack(sendReceiveSocket, sendPacket);
+				printSend(sendPacket);
+			}	 
 		} else if (type.name().equals("LOSE_PACKET")) {
 			findPacket();
 		} else if (type.name().equals("DELAY_PACKET")) {
@@ -306,7 +302,7 @@ public class ErrorSimulator {
 	 */
 	public void receivePack(DatagramSocket socket, DatagramPacket packet) {
 		
-		System.out.println("Host: Waiting for Packet.\n");
+		System.out.println("ErrorSim: Waiting for Packet.\n");
 		try {        
 	         socket.receive(packet);
 	    } catch (IOException e) {
@@ -322,7 +318,7 @@ public class ErrorSimulator {
 	 * @param packet, DatagramPacket that is used in the send request
 	 */
 	private void printSend(DatagramPacket packet){
-		System.out.println("Host: Sending packet");
+		System.out.println("ErrorSim: Sending packet");
 	    System.out.println("To host: " + packet.getAddress());
 	    System.out.println("Destination host port: " + packet.getPort());
 	    printStatus(packet);
@@ -333,7 +329,7 @@ public class ErrorSimulator {
 	 * @param packet, DatagramPacket that is used in the receive request
 	 */
 	private void printReceive(DatagramPacket packet){
-		System.out.println("Host: Packet received");
+		System.out.println("ErrorSim: Packet received");
 	    System.out.println("From host: " + packet.getAddress());
 	    System.out.println("Host port: " + packet.getPort());
 	    printStatus(packet);

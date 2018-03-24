@@ -123,6 +123,11 @@ public class ServerThread extends Thread implements Runnable {
 			// create ACK packet to acknowledge DATA packet
 			blockNum = calcBlockNumber();
 			response = createACKPacket();
+			// Duplicate packet checking
+			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+				receivePacket = new DatagramPacket(data, data.length);
+				receivePack(sendReceiveSocket, receivePacket);
+			}
 			
 			try {
 				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), 23);
@@ -208,6 +213,11 @@ public class ServerThread extends Thread implements Runnable {
 			// create DATA packet after receiving ACK packet
 			blockNum = calcBlockNumber();
 			data = createDataPacket();
+			// Duplicate packet checking
+			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+				receivePacket = new DatagramPacket(response, response.length);
+				receivePack(sendReceiveSocket, receivePacket);
+			}
 			try {
 				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 23);
 			} catch (UnknownHostException ue) {
@@ -303,6 +313,10 @@ public class ServerThread extends Thread implements Runnable {
 		}
 
 		return blockNumber;
+	}
+	
+	private int getBlockIntegerValue(int a, int b) {
+		return (a*10) + b;
 	}
 	
 	/**

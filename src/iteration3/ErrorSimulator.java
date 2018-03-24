@@ -79,9 +79,9 @@ public class ErrorSimulator {
 				receivePack(receiveSocket, receivePacket); // receive packets at port 23
 				
 				// Check if finished transferring
-				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[4] == 0) {
-					transferring = false;
-				}
+//				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[4] == 0) {
+//					transferring = false;
+//				}
 				
 				// send packet from client to server
 				// first packet (the request) should be sent to port 69
@@ -94,9 +94,16 @@ public class ErrorSimulator {
 				sendPack(sendReceiveSocket, sendReceivePacket);
 				printSend(sendReceivePacket);
 				
+				// check if finished writing
+				// looking for empty DATA packet e.g. [0, 3, 0 ... 0]
+				// packet type is 3 (data) and first and last element are zeroes
+				if (sendReceivePacket.getData()[1] == 0 && sendReceivePacket.getData()[2] == 0 && sendReceivePacket.getData()[515] == 0) {
+					port = 69; // set port back to 69 so Error Simulator can accept requests from Client
+					
+				}
+				
 				// SERVER TO CLIENT
 				if (transferring) {
-		
 					sendReceivePacket = new DatagramPacket(sendData, sendData.length);
 					receivePack(receiveSocket, sendReceivePacket); 
 					
@@ -104,9 +111,8 @@ public class ErrorSimulator {
 					
 					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
 					sendPack(sendReceiveSocket, sendPacket);	
-					
+					printSend(sendPacket);
 					// Check if end of transfer
-					//if(sendPacket.getData()[1] == 3 && sendPacket.getData()[2] == 0 && sendPacket.getData()[515] == 0) port = 69;
 				}
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {
@@ -338,16 +344,19 @@ public class ErrorSimulator {
 	 * @param packet, DatagramPacket that is used in the request
 	 */
 	private void printStatus(DatagramPacket packet){
+		byte[] data = packet.getData();
 	    int len = packet.getLength();
+	    PacketType type = PacketType.getPacketType((int)data[1]);
 	    System.out.println("Length: " + len);
+		System.out.println("Packet Type: " + type);
 	    System.out.print("Containing: ");
 	    
 	    //prints the bytes of the packet
 	    System.out.println(Arrays.toString(packet.getData()));
 	    
 	    //prints the packet as text
-		String received = new String(packet.getData(),0,len);
-		System.out.println(received);
+		//String received = new String(packet.getData(),0,len);
+		//System.out.println(received);
 	}
 	
 	public static void main(String args[]){
@@ -386,8 +395,8 @@ public class ErrorSimulator {
 		}
 		
 		
-		if(packet.ordinal() == 2 || packet.ordinal() == 3) {//to determine the nth. DATA or ACK packet
-			if(packet.ordinal() == 2 ) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
+		if(packet.ordinal() == 3 || packet.ordinal() == 4) { //to determine the nth. DATA or ACK packet
+			if(packet.ordinal() == 3) System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
 			else System.out.println("ErrorSim: Enter the ACK packet that will be affected: ");
 			
 			boolean positive = false;
@@ -399,13 +408,13 @@ public class ErrorSimulator {
 			}
 		}
 		
-		if(type.ordinal() == 2) {//for delay packet
+		if(type.ordinal() == 2) { //for delay packet
 			System.out.println("ErrorSim: Enter the delay, in seconds: ");
 			while(!sc.hasNextInt()) sc.next();
 			delay = sc.nextInt();
 		}
 		
-		if(type.ordinal() == 3) {//for duplicate packet
+		if(type.ordinal() == 3) { //for duplicate packet
 			System.out.println("ErrorSim: Enter the duplicate offsets: ");
 			while(!sc.hasNextInt()) sc.next();
 			duplicateOffset = sc.nextInt();
@@ -435,26 +444,4 @@ public class ErrorSimulator {
 			else throw new IllegalArgumentException("Invalid type");
 		}
 	}
-	
-	public enum PacketType {
-		
-		RRQ(0),
-		WRQ(1),
-		DATA(2),
-		ACK(3);
-		private int packet;
-		
-		PacketType(int packet){
-			this.packet = packet;
-		}
-		
-		static PacketType getPacketType(int packet) throws IllegalArgumentException {
-			if(packet == 0) return RRQ;
-			if(packet == 1) return WRQ;
-			if(packet == 2) return DATA;
-			if(packet == 3) return ACK;
-			else throw new IllegalArgumentException("Invalid request");
-		}
-	}
-
 }

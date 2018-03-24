@@ -62,7 +62,6 @@ public class Client {
 	 * @param filename Name of requested file to be written to server
 	 */
 	public void sendWrite(String filename) {
-		
 		try {
 			sendReceiveSocket.setSoTimeout(10000);
 		} catch (SocketException e2) {
@@ -106,21 +105,21 @@ public class Client {
 				received = true;
 				// Socket Timeout handling
 			} catch (SocketTimeoutException se){
-				while(numberOfTimeout < 2){
+				while(numberOfTimeout < 2) {
 					numberOfTimeout++;
+					System.out.println("Client: Timeout (" + numberOfTimeout + ")");
 					if (sendPacket == null){
 						if (numberOfTimeout == 2){
 							try {
 								// Retransmit
 								sendReceiveSocket.send(writeRequest);
-								
 							} catch (IOException e) {
 								e.printStackTrace();
 								System.exit(1);
 							}
 						}
 					} else {
-						if (numberOfTimeout == 2){
+						if (numberOfTimeout == 2) {
 							try {
 								sendReceiveSocket.send(sendPacket);
 							} catch (IOException e) {
@@ -176,6 +175,7 @@ public class Client {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
 				sendEmptyDataPacket();
+				receivePack(sendReceiveSocket, receivePacket);
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}
@@ -250,9 +250,8 @@ public class Client {
 			// Server responds to a Read Request with a DATA packet (save to receivePacket)
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
-			// Receive packet from server
 			
-			
+			// Receive packet from server	
 			try {
 				sendReceiveSocket.receive(receivePacket);
 			}

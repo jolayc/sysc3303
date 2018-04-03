@@ -32,11 +32,16 @@ public class Client {
 	private int numberOfTimeout=0;
 	private byte[] fileAsBytes;
 	
-	private final int simPort = 23;
+	private int simPort = 23;
+	private int serverPort;
 	private int receivePort;
+
+	private InetAddress address;
 	
 	
 	private boolean mode;
+	private boolean foreignServer;
+	private boolean multiClient;
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket sendPacket, receivePacket;
@@ -52,7 +57,6 @@ public class Client {
 			// Bind socket to any available port (The Client port)
 			// which will be used for both sending and receiving
 			sendReceiveSocket = new DatagramSocket();
-			
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
 		}
@@ -71,6 +75,8 @@ public class Client {
 		
 		boolean first = true;
 		
+		if(multiClient) serverPort = 69;
+			
 		try {
 			sendReceiveSocket.setSoTimeout(10000);
 		} catch (SocketException e2) {
@@ -91,6 +97,7 @@ public class Client {
 		
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
+		if(foreignServer) writeRequest.setAddress(address);
 		try {
 			sendReceiveSocket.send(writeRequest); // Client Port to Error Sim Port (23)
 		} catch (IOException e) {
@@ -123,6 +130,7 @@ public class Client {
 				
 				if(first){
 					receivePort = receivePacket.getPort();
+					if(foreignServer) serverPort = receivePort;
 					first = false;
 				}
 				
@@ -179,8 +187,12 @@ public class Client {
 			byte[] dataBlock = createDataPacket();
 
 			// Create and Send DATA block to Server
+		
 			try {
-				sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), simPort);
+				if(foreignServer && multiClient) sendPacket = new DatagramPacket(dataBlock, dataBlock.length, address, serverPort);
+				else if(foreignServer) sendPacket = new DatagramPacket(dataBlock, dataBlock.length, address, simPort);
+				else if(multiClient) sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), serverPort);
+				else sendPacket = new DatagramPacket(dataBlock, dataBlock.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -235,7 +247,10 @@ public class Client {
 			data[i] = 0;
 		}
 		try {
-			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
+			if(foreignServer && multiClient) sendPacket = new DatagramPacket(data, data.length, address, serverPort);
+			else if(foreignServer) sendPacket = new DatagramPacket(data, data.length, address, simPort);
+			else if(multiClient) sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), serverPort);
+			else sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -262,6 +277,8 @@ public class Client {
 		blockNum[1] = 1;
 		
 		boolean first = true;
+		
+		if(multiClient) serverPort = 69;
 		
 		// Create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
@@ -550,7 +567,10 @@ public class Client {
 	public DatagramPacket createSendPacket(byte[] rq){
 		DatagramPacket send = null;
 		try {
-			send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), simPort);
+			if(foreignServer && multiClient) send = new DatagramPacket(rq, rq.length, address, serverPort);
+			else if(foreignServer) send = new DatagramPacket(rq, rq.length, address, simPort);
+			else if(multiClient) send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), serverPort);
+			else send = new DatagramPacket(rq, rq.length, InetAddress.getLocalHost(), simPort);
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 			System.exit(1);
@@ -737,11 +757,31 @@ public class Client {
 		this.mode = mode;	
 	}
 	
+	private void setForeign(boolean foreign){
+		this.foreignServer = foreign;
+	}
+	
+	private void setForeignAddress(String address){
+		try {
+			this.address = InetAddress.getByName(address);
+			System.out.println(address.toString());
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}		
+	}
+	
+	private void setMultiClient(boolean multiClient){
+		this.multiClient = multiClient;
+	}
+	
 	public static void main(String args[]){
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
 		boolean modeSelected = false;
-		String mode;
+		boolean serverSelected = false;
+		boolean clientSelected = false;
+		String mode, server, ip, host, client;
 		
 		while (true) {
 			while(!modeSelected) {
@@ -755,7 +795,40 @@ public class Client {
 				} else if (mode.equals("v")) {
 					c.setQuiet(false);
 					modeSelected = true;
-				} else {}
+				} 
+			}
+			
+			while(!serverSelected){
+				// Select normal or foreign server
+				System.out.println("Client: Enter n for 'normal server' mode or f for 'foreign server' mode");
+				while(!sc.hasNext()) sc.next();
+				server = sc.nextLine();
+				if(server.equals("n")){
+					c.setForeign(false);
+					serverSelected = true;
+				}else if(server.equals("f")){
+					c.setForeign(true);
+					// Select port of foreign server
+					System.out.println("Client: Enter ip address of foreign server");
+					while(!sc.hasNextLine()) sc.nextLine();
+					ip = sc.nextLine();;
+					c.setForeignAddress(ip);
+					serverSelected = true;
+					}
+			}
+			
+			while(!clientSelected){
+				//for allowing one or multiple clients
+				System.out.println("Client: enter s for 'only allow one client' mode or m for 'allow multiple clients' mode");
+				while(!sc.hasNext()) sc.next();
+				client = sc.nextLine();
+				if(client.equals("s")){
+					c.setMultiClient(false);
+					clientSelected = true;
+				}else if(client.equals("m")){
+					c.setMultiClient(true);
+					clientSelected = true;
+				}
 			}
 			
 			System.out.println("Client: Enter file name or 'exit' to terminate.");

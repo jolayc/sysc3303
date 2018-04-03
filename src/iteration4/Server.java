@@ -41,7 +41,6 @@ public class Server implements Runnable {
 	
 	private int[] blockNumber;
 
-
 	private File f;
 	
 	/**
@@ -261,6 +260,16 @@ public class Server implements Runnable {
 		}
 	}
 	
+	private InetAddress getInetAddress(){
+		try {
+			return InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		return null;
+	}
+	
 	/**
 	 * Receive a packet being sent to port 69
 	 * @param sock DatagramSocket ported to port 69
@@ -307,10 +316,12 @@ public class Server implements Runnable {
 	}
 	
 	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);	
 		Server s = new Server();
+		System.out.println("Server: IP Address is " + s.getInetAddress().toString());
 		new Thread(s).start();
 		System.out.println("Server: To exit, enter 'exit'");
-		Scanner sc = new Scanner(System.in);
+		
 		
 		//Check for exit command
 		while(true) {

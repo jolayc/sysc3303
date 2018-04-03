@@ -402,8 +402,19 @@ public class ErrorSimulator {
 		System.out.println(received);
 	}
 	
+	private InetAddress getInetAddress(){
+		try {
+			return InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		return null;
+	}
+	
 	public static void main(String args[]){
 		ErrorSimulator sim = new ErrorSimulator();
+		System.out.println("Error Sim: IP Address is " + sim.getInetAddress().toString());
 		Scanner sc = new Scanner(System.in);
 		boolean validType = false;
 		boolean validPacket = false;

@@ -308,13 +308,13 @@ public class Server implements Runnable {
 	public static void main(String[] args) {
 		Server s = new Server();
 		new Thread(s).start();
-		System.out.println("Server: To exit, enter 'exit'");
 		try {
 			InetAddress addr = InetAddress.getLocalHost();
 			System.out.println("Server: This server is located at " + addr);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 		}
+		System.out.println("Server: To exit, enter 'exit'");
 		Scanner sc = new Scanner(System.in);
 		
 		//Check for exit command

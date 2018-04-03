@@ -288,7 +288,13 @@ public class Client {
 			}
 			
 			if(first) receivePort = receivePacket.getPort();
-			
+			if (emptyDataReceived) finished = true;
+			// check if empty DATA packet (finished transferring)
+			// e.g. receivePacket = [0, 3, 0 ... 0]
+			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[2] == 0
+					&& receivePacket.getData()[515] == 0) {
+				emptyDataReceived = true;
+			}
 			//check for port
 			if(receivePacket.getPort() != receivePort){
 				ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
@@ -356,6 +362,7 @@ public class Client {
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
 			calcBlockNumber();
+			
 			// Duplicate packet checking
 			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(incomingData, incomingData.length);
@@ -374,16 +381,9 @@ public class Client {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			
-			// check if end of read
-			int len = 0;
-			for(byte b: incomingData){
-				if(b == 0 && len > 4) break;
-				len++;
-			}
-			
+
 			//end of transfer
-			if(len < 512) {
+			if(finished) {
 				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
 				break;
 			}

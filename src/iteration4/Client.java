@@ -402,6 +402,7 @@ public class Client {
 			
 			// Create and send ACK
 			ack = createACKPacket(blockNum);
+			
 			calcBlockNumber();
 			
 			// Duplicate packet checking
@@ -411,7 +412,10 @@ public class Client {
 			}
 			
 			try {
-				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), simPort);
+				if(foreignServer && multiClient) sendPacket = new DatagramPacket(ack, ack.length, address, serverPort);
+				else if(foreignServer) sendPacket = new DatagramPacket(ack, ack.length, address, simPort);
+				else if(multiClient) sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), serverPort);
+				else sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -831,10 +835,10 @@ public class Client {
 				}else if(server.equals("f")){
 					c.setForeign(true);
 					// Select port of foreign server
-					System.out.println("Client: Enter ip address of foreign server");
+					System.out.println("Client: Enter host of foreign server");
 					while(!sc.hasNextLine()) sc.nextLine();
-					ip = sc.nextLine();;
-					c.setForeignAddress(ip);
+					host = sc.nextLine();;
+					c.setForeignAddress(host);
 					serverSelected = true;
 					}
 			}

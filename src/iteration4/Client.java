@@ -68,19 +68,22 @@ public class Client {
 	 * @param filename Name of requested file to be written to server
 	 */
 	public void sendWrite(String filename) {
-		
-		boolean first = true;
-		
 		try {
 			sendReceiveSocket.setSoTimeout(10000);
 		} catch (SocketException e2) {
 			e2.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		System.out.println("Client: Requested to write to server with filename: " + filename);
+		// Buffer for Server ACK
 		byte[] serverACK;
+
+		// Status Flags
+		boolean first = true;
 		boolean received = false;
+		boolean sentEmptyData = false;
+		boolean finished = false;
 
 		blockNum = new int[2];
 		blockNum[0] = 0;
@@ -88,7 +91,7 @@ public class Client {
 
 		// Prompt user to provide path of file and convert to byte[]
 		fileAsBytes = toBytes(filename);
-		
+
 		// Create and send request
 		DatagramPacket writeRequest = createWRQPacket(filename);
 		try {
@@ -100,83 +103,108 @@ public class Client {
 		// Print the request packet being sent
 		printSend(writeRequest);
 
-		//Process response from Server
-		while(true) {
+		// Process response from Server
+		while (true) {
 			// Server responds to Write request with an ACK
 			serverACK = new byte[516];
 			received = false;
-			receivePacket = new DatagramPacket(serverACK, serverACK.length);;
-		
-			
+			receivePacket = new DatagramPacket(serverACK, serverACK.length);
+
 			// Receive ACK packet from Server
-			while(!received){
-			try {
-				sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
-				
-				//check for legality
-				if(!checkLegality(receivePacket)) {
-					ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
-					sendErrorPacket(illegalOperation);
-					System.out.println("Illegal TFTP Operation.");
-					shutdown();
+			// and handle timeouts
+			while (!received) {
+				try {
+					sendReceiveSocket.receive(receivePacket); // Port 23 (Error Sim) to Port Client
+
+					// check for legality
+					if (!checkLegality(receivePacket)) {
+						ErrorPacket illegalOperation = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+						sendErrorPacket(illegalOperation);
+						System.out.println("Illegal TFTP Operation.");
+						shutdown();
+					}
+
+					if (first) {
+						receivePort = receivePacket.getPort();
+						first = false;
+					}
+
+					// check for port
+					if (receivePacket.getPort() != receivePort) {
+						ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
+						sendErrorPacket(wrongPort);
+						System.out.println("Packet received from unknown port.");
+						shutdown();
+					}
+
+					checkError(receivePacket);
+					received = true;
+					// Socket Timeout handling
+				} catch (SocketTimeoutException se) {
+					while (numberOfTimeout < 2) {
+						numberOfTimeout++;
+						if (sendPacket == null) {
+							if (numberOfTimeout == 2) {
+								try {
+									// Retransmit
+									sendReceiveSocket.send(writeRequest);
+
+								} catch (IOException e) {
+									e.printStackTrace();
+									System.exit(1);
+								}
+							}
+						} else {
+							if (numberOfTimeout == 2) {
+								try {
+									sendReceiveSocket.send(sendPacket);
+								} catch (IOException e) {
+									e.printStackTrace();
+									System.exit(1);
+								}
+							}
+						}
+					}
+					numberOfTimeout = 0;
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
 				}
-				
-				if(first){
-					receivePort = receivePacket.getPort();
-					first = false;
-				}
-				
-				//check for port
-				if(receivePacket.getPort() != receivePort){
+			}
+
+			printReceive(receivePacket);
+			
+			// If empty DATA block has been sent
+			// it has been acknowledge at this point, so handle
+			// things here and/or break
+			if(sentEmptyData) {
+				if (receivePacket.getPort() != receivePort) {
 					ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
 					sendErrorPacket(wrongPort);
 					System.out.println("Packet received from unknown port.");
 					shutdown();
 				}
-				
-				checkError(receivePacket);
-				received = true;
-				// Socket Timeout handling
-			} catch (SocketTimeoutException se){
-				while(numberOfTimeout < 2){
-					numberOfTimeout++;
-					if (sendPacket == null){
-						if (numberOfTimeout == 2){
-							try {
-								// Retransmit
-								sendReceiveSocket.send(writeRequest);
-								
-							} catch (IOException e) {
-								e.printStackTrace();
-								System.exit(1);
-							}
-						}
-					} else {
-						if (numberOfTimeout == 2){
-							try {
-								sendReceiveSocket.send(sendPacket);
-							} catch (IOException e) {
-								e.printStackTrace();
-								System.exit(1);
-							}
-						}
-					}
-				} numberOfTimeout = 0;
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}}
+				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+				break;
+			}
 			
-			printReceive(receivePacket);
 			calcBlockNumber();
 			// Duplicate packet checking
-			if(getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
+			if (getBlockIntegerValue(blockNum[0], blockNum[1]) < getBlockIntegerValue(receivePacket.getData()[2], receivePacket.getData()[3])) {
 				receivePacket = new DatagramPacket(serverACK, serverACK.length);
 				receivePack(sendReceiveSocket, receivePacket);
 			}
 
 			// Send a DATA Block to write
-			byte[] dataBlock = createDataPacket();
+			byte[] dataBlock;
+			if(!finished) {
+				dataBlock = createDataPacket();
+			} else {
+				// Finished sending DATA blocks
+				// send an empty block
+				dataBlock = createEmptyDataPacket();
+				sentEmptyData = true;
+			}
 
 			// Create and Send DATA block to Server
 			try {
@@ -185,67 +213,36 @@ public class Client {
 				e1.printStackTrace();
 				System.exit(1);
 			}
+			
 			try {
 				sendReceiveSocket.send(sendPacket); // Client Port to Port 23 (Error Sim)
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			// check if end of write
-			int len = 0;
-			for(byte b: dataBlock){
-				if(b == 0 && len > 4) break;
-				len++;
-			}		
-			
-			//end of transfer
-			if(len < 512) {
-				try {
-					sendReceiveSocket.setSoTimeout(200);
-				} catch (SocketException e) {
-					e.printStackTrace();
-					System.exit(1);
+
+			// end of transfer
+			if(!sentEmptyData) {
+				int len = 0;
+				for (byte b: dataBlock) {
+					if (b == 0 && len > 4) break;
+					len++;
 				}
-				receivePacket = new DatagramPacket(serverACK, serverACK.length);
-				receivePack(sendReceiveSocket, receivePacket);
-				
-				//check for port
-				if(receivePacket.getPort() != receivePort){
-					ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
-					sendErrorPacket(wrongPort);
-					System.out.println("Packet recevied from unknown port.");
-					shutdown();
-				}
-				
-				sendEmptyDataPacket();
-				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
-				break;
+				if (len < 512) finished = true;
 			}
 		}
 	}
 	
 	/**
-	 * A method that sends an empty data packet at the end of a transfer
+	 * Creates an empty DATA packet filled with 0s
+	 * @return	byte[] empty DATA packet (byte array)
 	 */
-	private void sendEmptyDataPacket() {
+	private byte[] createEmptyDataPacket() {
 		byte[] data = new byte[516];
 		data[0] = 0;
 		data[1] = 3;
-		for (int i = 2; i < data.length; i++) {
-			data[i] = 0;
-		}
-		try {
-			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
-		} catch (UnknownHostException e1) {
-			e1.printStackTrace();
-			System.exit(1);
-		}
-		try {
-			sendReceiveSocket.send(sendPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
+		for (int i = 2; i < data.length; i++) data[i] = 0;
+		return data;
 	}
 	
 	/**
@@ -261,7 +258,10 @@ public class Client {
 		blockNum[0] = 0;
 		blockNum[1] = 1;
 		
+		// Status flags
 		boolean first = true;
+		boolean finished = false;
+		boolean emptyDataReceived = false;
 		
 		// Create and send request
 		DatagramPacket readRequest = createRRQPacket(filename);
@@ -279,8 +279,6 @@ public class Client {
 			incomingData = new byte[4 + 512]; // 2 for opcode, 2 for block and 512 bytes for max block size
 			receivePacket = new DatagramPacket(incomingData, incomingData.length);
 			// Receive packet from server
-			
-			
 			try {
 				sendReceiveSocket.receive(receivePacket);
 			}

@@ -10,7 +10,7 @@ import java.util.Arrays;
  * A server thread that will handle read/write requests received by server, sent by client 
  */
 
-public class ServerThread extends Thread implements Runnable {
+public class ServerThread implements Runnable {
 	
 	private DatagramSocket sendReceiveSocket;
 	private DatagramPacket receivePacket, sendPacket;
@@ -68,26 +68,24 @@ public class ServerThread extends Thread implements Runnable {
 		
 		byte[] data =  receivePacket.getData();
 		receivePort = receivePacket.getPort();
-		
-		if (data[0] == 0 && data[1] == 1) {
-			read = true;
-			handleRead(); // read request
-		}
-		else if (data[0] == 0 && data[1] == 2) {
-			write = true;
-			handleWrite(); // write request
-		}
+		if(data[0] == 0 && data[1] == 1) handleRead();
+		else if(data[0] == 0 && data[1] == 2) handleWrite();
+		sendReceiveSocket.close();
 	}
 	
 	/**
 	 * For handling write requests
 	 */
 	private void handleWrite() {
-		// response packet
+		// Response packet
 		byte[] response = new byte[512 + 4];
 		byte[] data;
-
-		// send ACK to write request
+		
+		// Status flags
+		boolean finished = false;
+		boolean emptyDataReceived = false;
+		
+		// Send ACK to write request
 		response = createACKPacket();
 		try {
 			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), simPort);
@@ -113,12 +111,29 @@ public class ServerThread extends Thread implements Runnable {
 				checkPort(receivePacket);
 				checkError(receivePacket);
 				checkLegality(receivePacket);
-				handleData(receivePacket.getData());
 			}
 			catch(IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
+			
+			// empty DATA block is received so transfer is over after final ACK
+			if(emptyDataReceived) finished = true;
+			
+			// check if empty DATA packet (finished transferring)
+			// e.g. receivePacket = [0, 3, 0 ... 0]
+			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[2] == 0
+					&& receivePacket.getData()[515] == 0) {
+				emptyDataReceived = true;
+			}
+			
+			try {
+				handleData(receivePacket.getData());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
 			// create ACK packet to acknowledge DATA packet
 			blockNum = calcBlockNumber();
 			response = createACKPacket();
@@ -135,40 +150,95 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			// check if end of write
-			int len = 0;
-			for(byte b: data){
-				if(b == 0 && len > 4) break;
-				len++;
-			}
-			
-			if(len < 512) {
-				break;
-			}
+
+			// check if finished
+			if(finished) break;
 		}
-		sendReceiveSocket.close();
 	}
 	
 	/**
 	 * For handling read requests
 	 */
 	private void handleRead() {
+		try {
+			sendReceiveSocket.setSoTimeout(10000);
+		} catch (SocketException e1) {
+
+			e1.printStackTrace();
+			System.exit(1);
+		}
+
+		// Status flags
+		boolean received = false;
+		boolean sentEmptyData = false;
+		boolean finished = false;
+
+		// response packet
+		byte[] data = new byte[512 + 4];
+		byte[] response;
+
+		// send DATA to read request
+		data = createDataPacket();
+		try {
+			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
+		} catch (UnknownHostException ue) {
+			ue.printStackTrace();
+			System.exit(1);
+		}
+		try {
+			sendReceiveSocket.send(sendPacket);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+
+		// process ACK packets
+		while (true) {
+			response = new byte[512 + 4];
+			receivePacket = new DatagramPacket(response, response.length);
+			// receive packet from Client
+
+			while (!received) {
+				try {
+					sendReceiveSocket.receive(receivePacket);
+					checkPort(receivePacket);
+					checkError(receivePacket);
+					checkLegality(receivePacket);
+					received = true;
+				} catch (SocketTimeoutException se) {
+					while (numberOfTimeout < 2) {
+						numberOfTimeout++;
+						if (numberOfTimeout == 2) {
+							try {
+								sendReceiveSocket.send(sendPacket);
+							} catch (IOException e) {
+								e.printStackTrace();
+								System.exit(1);
+							}
+						}
+					}
+					numberOfTimeout = 0;
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			}
+
+			received = false;
 			
-			boolean received = false;
-			try {
-				sendReceiveSocket.setSoTimeout(10000);
-			} catch (SocketException e1) {
-				
-				e1.printStackTrace();
-				System.exit(1);
+			if(sentEmptyData) {
+				break;
+			}
+			// create DATA packet after receiving ACK packet
+			blockNum = calcBlockNumber();
+			if(!finished) {
+				data = createDataPacket();
+			} else {
+				data = createEmptyDataPacket();
+				sentEmptyData = true;
 			}
 			
-			// response packet
-			byte[] data = new byte[512 + 4];
-			byte[] response;
-				
-			// send DATA to read request
-			data = createDataPacket();
+			// Create and send DATA packet to Client
 			try {
 				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
 			} catch (UnknownHostException ue) {
@@ -181,68 +251,17 @@ public class ServerThread extends Thread implements Runnable {
 				e.printStackTrace();
 				System.exit(1);
 			}
-				
-			// process ACK packets
-			while (true) {
-				response = new byte[512 + 4];
-				receivePacket = new DatagramPacket(response, response.length);
-				// receive packet from Client
-				
-				while(!received){
-				try { 
-					sendReceiveSocket.receive(receivePacket);	
-					checkPort(receivePacket);
-					checkError(receivePacket);
-					checkLegality(receivePacket);
-					received = true;
-				} catch (SocketTimeoutException se){
-					while(numberOfTimeout < 2){
-					numberOfTimeout++;
-					if (numberOfTimeout==2){
-						try {
-							sendReceiveSocket.send(sendPacket);
-						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
-					}}numberOfTimeout = 0;
-				}
-				catch(IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}}
-				
-				received = false;
-				// create DATA packet after receiving ACK packet
-				blockNum = calcBlockNumber();
-				data = createDataPacket();
-				try {
-					sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
-				} catch (UnknownHostException ue) {
-					ue.printStackTrace();
-					System.exit(1);
-				}
-				try {
-					sendReceiveSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}				
-				
-				// check if end of read
+			
+			if(!sentEmptyData) { 
 				int len = 0;
-				//System.out.println(Arrays.toString(data));
-				for(byte b: data){
-					if(b == 0 && len > 4) break;
+				for (byte b : data) {
+					if (b == 0 && len > 4) break;
 					len++;
 				}
-				//System.out.println(len);
-				
-				if(len < 512) {
-					break;
-				}
+				if (len < 512) finished = true;
 			}
-			sendReceiveSocket.close();
+		}
+		sendReceiveSocket.close();
 	}
 
 	/**
@@ -276,6 +295,18 @@ public class ServerThread extends Thread implements Runnable {
 			System.out.println("Server: File transfer/write complete.");
 
 		}
+	}
+	
+	/**
+	 * Creates an empty DATA packet filled with 0s
+	 * @return	byte[] empty DATA packet (byte array)
+	 */
+	private byte[] createEmptyDataPacket() {
+		byte[] data = new byte[516];
+		data[0] = 0;
+		data[1] = 3;
+		for (int i = 2; i < data.length; i++) data[i] = 0;
+		return data;
 	}
 	
 	/**

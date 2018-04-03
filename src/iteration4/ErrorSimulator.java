@@ -45,8 +45,6 @@ public class ErrorSimulator {
 			sendReceiveSocket = new DatagramSocket();
 			
 			count = 0;
-			//Set timeout
-			//sendReceiveSocket.setSoTimeout(5000);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -66,7 +64,7 @@ public class ErrorSimulator {
 			byte[] sendData = new byte[512 + 4];
 			
 			// status flag
-			boolean transferring = true;
+			boolean emptyDataSent = false; // Used to check if an empty DATA packet was sent
 			
 			// port number
 			// 69 for RQ, 23 for DATA and ACK
@@ -80,9 +78,15 @@ public class ErrorSimulator {
 				receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				receivePack(receiveSocket, receivePacket); // receive packets at port 23
 				
-				// Check if finished transferring
-				if (receivePacket.getData()[1] == 3 && receivePacket.getData()[4] == 0) {
-					transferring = false;
+				// Swap ports back to 69 to handle requests after finishing a transfer
+				if (emptyDataSent) {
+					port = 69;
+					emptyDataSent = false;
+				}
+				
+				// Check if empty DATA packet was sent
+				if (receiveData[1] == 3 && receiveData[3] == 0 && receiveData[515] == 0) {
+					emptyDataSent = true;
 				}
 				
 				if (type.name().equals("INVALID_OPCODE")){
@@ -120,35 +124,35 @@ public class ErrorSimulator {
 				printSend(sendReceivePacket);
 				
 				// SERVER TO CLIENT
-				if (transferring) {
-					sendReceivePacket = new DatagramPacket(sendData, sendData.length);
-					receivePack(receiveSocket, sendReceivePacket); 
+				sendReceivePacket = new DatagramPacket(sendData, sendData.length);
+				receivePack(receiveSocket, sendReceivePacket);
+				if(sendReceivePacket.getData()[1] == 3 && ) {
 					
-					port = sendReceivePacket.getPort();
-					
-					if (type.name().equals("INVALID_OPCODE")){
-						if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")) receivePacket.getData()[1] = 8;
-						if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) receivePacket.getData()[1] = 9;
-					}
-					
-					sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
-					
-					if(type.name().equals("UNKNOWN_PORT")){
-						
-						if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
-							sendPack(wrongPortSocket, sendReceivePacket);
-							type = ErrorType.getErrorType(0);
-						}
-						if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
-							sendPack(wrongPortSocket, sendReceivePacket);
-							type = ErrorType.getErrorType(0);
-						}
-					}
-					sendPack(sendReceiveSocket, sendPacket);	
-					
-					// Check if end of transfer
-					//if(sendPacket.getData()[1] == 3 && sendPacket.getData()[2] == 0 && sendPacket.getData()[515] == 0) port = 69;
 				}
+				port = sendReceivePacket.getPort();
+
+				if (type.name().equals("INVALID_OPCODE")) {
+					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA"))
+						receivePacket.getData()[1] = 8;
+					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK"))
+						receivePacket.getData()[1] = 9;
+				}
+
+				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+
+				if (type.name().equals("UNKNOWN_PORT")) {
+
+					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")) {
+						sendPack(wrongPortSocket, sendReceivePacket);
+						type = ErrorType.getErrorType(0);
+					}
+					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
+						sendPack(wrongPortSocket, sendReceivePacket);
+						type = ErrorType.getErrorType(0);
+					}
+				}
+				sendPack(sendReceiveSocket, sendPacket);
+				printSend(sendPacket);
 			}	
 		} else if (type.name().equals("LOSE_PACKET")) {
 			findPacket();
@@ -197,7 +201,7 @@ public class ErrorSimulator {
 		byte[] sendData = new byte[512 + 4];
 					
 		// status flag
-		boolean stop = false;
+		boolean emptyDataSent = false;
 					
 		// port number
 		// 69 for RQ, 23 for DATA and ACK
@@ -205,89 +209,98 @@ public class ErrorSimulator {
 		int oldPort;
 					
 		// repeat forever
-		while(true){
+		while (true) {
 			// CLIENT TO SERVER
 			// receive packet from client
 			receivePacket = new DatagramPacket(receiveData, receiveData.length);
 			receivePack(receiveSocket, receivePacket);
 			System.out.println("Client Packet: " + Arrays.toString(receivePacket.getData()));
-						
-			// check if finished sending and receiving between client and server
-			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[515] == 0) {
-				stop = true;
+
+			// Swap ports back to 69 to handle requests after finishing a transfer
+			if (emptyDataSent) {
+				port = 69;
+				emptyDataSent = false;
 			}
-			
-			if(receivePacket.getData()[1] == THREE) {
+
+			// Check if empty DATA packet was sent
+			if (receiveData[1] == 3 && receiveData[3] == 0 && receiveData[515] == 0) {
+				emptyDataSent = true;
+			}
+
+			if (receivePacket.getData()[1] == THREE) {
 				count++;
 			}
-			
-			if(type.name().equals("DUPLICATE_PACKET")){
-				if(count == duplicateOffset + packetNumber) simulateDuplicatePacket(sendReceiveSocket);
+
+			if (type.name().equals("DUPLICATE_PACKET")) {
+				if (count == duplicateOffset + packetNumber)
+					simulateDuplicatePacket(sendReceiveSocket);
 			}
-			
-			if(checkError(receivePacket)){
-				if(type.name().equals("LOSE_PACKET")){
+
+			if (checkError(receivePacket)) {
+				if (type.name().equals("LOSE_PACKET")) {
 					receivePacket = new DatagramPacket(receiveData, receiveData.length);
 					receivePack(receiveSocket, receivePacket);
 				}
 			}
-			
+
 			// send receive packet from client to server
 			// the first packet (which should be a RQ) should be sent to port 69
 			try {
-				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), InetAddress.getLocalHost(), port);
+				sendReceivePacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
+						InetAddress.getLocalHost(), port);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
 			}
-						
+
 			// sends the sendReceivePacket to the server
 			sendPack(sendReceiveSocket, sendReceivePacket);
 			printSend(sendReceivePacket);
-						
-			// SERVER TO CLIENT
-			if (!stop) {
-				try {
-					sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
-				} catch (UnknownHostException e1) {
-					e1.printStackTrace();
-					System.exit(1);
-				}
-						
-				// waits until sendReceivePacket receives a packet from the server
-				receivePack(receiveSocket, sendReceivePacket);
-				
-				if(sendReceivePacket.getData()[1] == THREE) {
-					count++;
-				}
-					
-				// this should change the port to the thread port
-				oldPort = port;
-				port = sendReceivePacket.getPort();
 
-				if(type.name().equals("DUPLICATE_PACKET")){
-					System.out.print("Count: " + count + "Offset: " + (duplicateOffset + packetNumber));
-					if(count == duplicateOffset + packetNumber) simulateDuplicatePacket(sendReceiveSocket);
-				}
-			
-				if(checkError(sendReceivePacket)){
-					if(type.name().equals("LOSE_PACKET")){
-						try {
-							sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), oldPort);
-							receivePack(receiveSocket, sendReceivePacket);
-						} catch (UnknownHostException e) {
-							e.printStackTrace();
-							System.exit(1);
-						}
+			// SERVER TO CLIENT
+			try {
+				sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(), port);
+			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
+				System.exit(1);
+			}
+
+			// waits until sendReceivePacket receives a packet from the server
+			receivePack(receiveSocket, sendReceivePacket);
+
+			if (sendReceivePacket.getData()[1] == THREE) {
+				count++;
+			}
+
+			// this should change the port to the thread port
+			oldPort = port;
+			port = sendReceivePacket.getPort();
+
+			if (type.name().equals("DUPLICATE_PACKET")) {
+				System.out.print("Count: " + count + "Offset: " + (duplicateOffset + packetNumber));
+				if (count == duplicateOffset + packetNumber)
+					simulateDuplicatePacket(sendReceiveSocket);
+			}
+
+			if (checkError(sendReceivePacket)) {
+				if (type.name().equals("LOSE_PACKET")) {
+					try {
+						sendReceivePacket = new DatagramPacket(sendData, sendData.length, InetAddress.getLocalHost(),
+								oldPort);
+						receivePack(receiveSocket, sendReceivePacket);
+					} catch (UnknownHostException e) {
+						e.printStackTrace();
+						System.exit(1);
 					}
 				}
-			
-				// send the packet
-				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
-				System.out.println(receivePacket.getAddress());
-				sendPack(sendReceiveSocket, sendPacket);
-				}
-			}	
+			}
+
+			// send the packet
+			sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), receivePacket.getPort());
+			System.out.println(receivePacket.getAddress());
+			sendPack(sendReceiveSocket, sendPacket);
+			printSend(sendPacket);
+		}
 	}
 
 	/**

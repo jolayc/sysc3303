@@ -38,9 +38,6 @@ public class Server implements Runnable {
 	private String read = "READ";
 	private String write = "WRITE";
 	private String other = "OTHER";
-	
-	private int[] blockNumber;
-
 
 	private File f;
 	
@@ -53,7 +50,6 @@ public class Server implements Runnable {
 		try {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
-			blockNumber = new int[2];
 			rq = "NONE";
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -68,6 +64,7 @@ public class Server implements Runnable {
 	 */
 	public void run() {
 		while(!receiveSocket.isClosed()) {
+			int[] blockNumber;
 			// packet received buffer
 			byte[] data = new byte[512 + 4];
 			// Grab the request and create a ServerThread to handle the transfer
@@ -79,10 +76,12 @@ public class Server implements Runnable {
  			rq = checkReadWrite(receivePacket.getData());
 			if (rq.equals(read)) {
 				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
+				blockNumber = new int[2];
 				blockNumber[0] = 0;
 				blockNumber[1] = 1;
 				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
 			} else if (rq.equals(write)) {
+				blockNumber = new int[2];
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
 					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
@@ -310,6 +309,12 @@ public class Server implements Runnable {
 		Server s = new Server();
 		new Thread(s).start();
 		System.out.println("Server: To exit, enter 'exit'");
+		try {
+			InetAddress addr = InetAddress.getLocalHost();
+			System.out.println("Server: This server is located at " + addr);
+		} catch (UnknownHostException ue) {
+			ue.printStackTrace();
+		}
 		Scanner sc = new Scanner(System.in);
 		
 		//Check for exit command

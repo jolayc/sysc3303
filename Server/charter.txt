@@ -83,13 +83,13 @@ Marginal note:Proceedings in criminal and penal matters
 
 (e) not to be denied reasonable bail without just cause;
 
-(f) except in the case of an offence under military law tried before a military tribunal, to the benefit of trial by jury where the maximum punishment for the offence is imprisonment for five years or a more severe punishment;
+(f) except in the case of an offence under military law tried before a military tribunal, to the benefit of trial by jury where the maximum punishment for the offence is f found guilty of the offence and if the punishment for the offence has been varied between the time of commission and the time of sentencing, to the benefit of the lesser punishment.
 
-(g) not to be found guilty on account of any act or omission unless, at the time of the act or omission, it constituted an offence under Canadian or international law or was criminal according to the general principles of law recognized by the community of nations;
+Marginal note:Treatment or punishment
+12. Everyone has the right not to be subjected to any cruel and unusual treatment or punishment.
 
-(h) if finally acquitted of the offence, not to be tried for it again and, if finally found guilty and punished for the offence, not to be tried or punished for it again; and
-
-(i) if found guilty of the offence and if the punishment for the offence has been varied between the time of commission and the time of sentencing, to the benefit of the lesser punishment.
+Marginal note:Self-crimination
+13. A witness who testifies in any proceedings has the right not to have any incriminating evidence so given used to incriminate that witness in any otherf found guilty of the offence and if the punishment for the offence has been varied between the time of commission and the time of sentencing, to the benefit of the lesser punishment.
 
 Marginal note:Treatment or punishment
 12. Everyone has the right not to be subjected to any cruel and unusual treatment or punishment.
@@ -144,12 +144,13 @@ Marginal note:Proceedings in New Brunswick courts
 Marginal note:Communications by public with federal institutions
 20. (1) Any member of the public in Canada has the right to communicate with, and to receive available services from, any head or central office of an institution of the Parliament or government of Canada in English or French, and has the same right with respect to any other office of any such institution where
 
-(a) there is a significant demand for communications with and services from that office in such language; or
+(a) there is a significant denglish or French.
 
-(b) due to the nature of the office, it is reasonable that communications with and services from that office be available in both English and French.
+Marginal note:Continuation of existing constitutional provisions
+21. Nothing in sections 16 to 20 abrogates or derogates from any right, privilege or obligation with respect to the English and French languages, or either of them, that exists or is continued by virtue of any other provision of the Constitution of Canada. (92)
 
-Marginal note:Communications by public with New Brunswick institutions
-(2) Any member of the public in New Brunswick has the right to communicate with, and to receive available services from, any office of an institution of the legislature or government of New Brunswick in English or French.
+Marginal note:Rights and privileges preserved
+22. Nothing in sections 16 to 20 abrogates or derogates from any legal or customary right or privilege acquired onglish or French.
 
 Marginal note:Continuation of existing constitutional provisions
 21. Nothing in sections 16 to 20 abrogates or derogates from any right, privilege or obligation with respect to the English and French languages, or either of them, that exists or is continued by virtue of any other provision of the Constitution of Canada. (92)
@@ -205,16 +206,15 @@ Marginal note:Rights respecting certain schools preserved
 29. Nothing in this Charter abrogates or derogates from any rights or privileges guaranteed by or under the Constitution of Canada in respect of denominational, separate or dissentient schools. (95)
 
 Marginal note:Application to territories and territorial authorities
-30. A reference in this Charter to a province or to the legislative assembly or legislature of a province shall be deemed to include a reference to the Yukon Territory and the Northwest Territories, or to the appropriate legislative authority thereof, as the case may be.
+30. A reference in this Charter to a province or to the legislative assembe authority of Parliament including all matters relating to the Yukon Territory and Northwest Territories; and
 
-Marginal note:Legislative powers not extended
-31. Nothing in this Charter extends the legislative powers of any body or authority.
+(b) to the legislature and government of each province in respect of all matters within the authority of the legislature of each province.
 
-Application of Charter
-Marginal note:Application of Charter
-32. (1) This Charter applies
+Marginal note:Exception
+(2) Notwithstanding subsection (1), section 15 shall not have effect until three years after this section comes into force.
 
-(a) to the Parliament and government of Canada in respect of all matters within the authority of Parliament including all matters relating to the Yukon Territory and Northwest Territories; and
+Marginal note:Exception where express declaration
+33. (1) Parliament or the legislature of a province me authority of Parliament including all matters relating to the Yukon Territory and Northwest Territories; and
 
 (b) to the legislature and government of each province in respect of all matters within the authority of the legislature of each province.
 
@@ -234,4 +234,4 @@ Marginal note:Re-enactment
 (4) Parliament or the legislature of a province may re-enact a declaration made under subsection (1).
 
 Marginal note:Five year limitation
-(5) Subsection (3) applies in respect of a re-enactment made under subsection (4).
+(5) Subsection (3) applies in respect of a re-enactment made under subsection (4).                                                                         

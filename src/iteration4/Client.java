@@ -670,6 +670,12 @@ public class Client {
 	 */
 	public boolean checkLegality(DatagramPacket packet) {
 		
+		//if packet size is too big
+		if(packet.getData().length > 516) return false;
+				
+		//if packet size is too small
+		if(packet.getData().length < 4) return false;
+		
 		//if first byte in packet is not zero
 		if(packet.getData()[0] != ZERO) return false;
 		

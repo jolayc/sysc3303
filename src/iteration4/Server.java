@@ -264,6 +264,18 @@ public class Server implements Runnable {
 			System.out.println("Server Received Illegal TFTP Operation.");
 			shutdown();
 		}
+		if(packet.getData().length > 516){
+			ErrorPacket tooBig = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(tooBig);
+			System.out.println("Server Received Illegal TFTP Operation.");
+			shutdown();
+		}
+		if(packet.getData().length < 4){
+			ErrorPacket tooSmall = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(tooSmall);
+			System.out.println("Server Received Illegal TFTP Operation.");
+			shutdown();
+		}
 	}
 	
 	/**

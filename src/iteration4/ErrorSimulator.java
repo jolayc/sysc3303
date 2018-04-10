@@ -57,7 +57,8 @@ public class ErrorSimulator {
 	 */
 	private void receiveAndSend() {
 		if (type.name().equals("NORMAL_OPERATION") || type.name().equals("INVALID_OPCODE")
-				|| type.name().equals("INVALID_BLOCK_NUMBER") || type.name().equals("UNKNOWN_PORT")) {
+			|| type.name().equals("INVALID_BLOCK_NUMBER") || type.name().equals("UNKNOWN_PORT")
+			|| type.name().equals("BIG_DATA_PACKET") || type.name().equals("SMALL_DATA_PACKET")) {
 			// buffers for send and receive packets
 			byte[] receiveData = new byte[512 + 4];
 			byte[] sendData = new byte[512 + 4];
@@ -114,6 +115,28 @@ public class ErrorSimulator {
 					else if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")){
 						count++;
 						if(count == packetNumber) receivePacket.getData()[3] = (byte) (count + 2);
+					}
+				}
+				
+				if (type.name().equals("BIG_DATA_PACKET")){
+					if (receivePacket.getData()[1] == 3){
+						count++;
+						if(count == packetNumber){
+							byte[] big = new byte[600];
+							for(byte b: big) b = 0;
+							receivePacket.setData(big);
+						}
+					}
+				}
+				
+				if (type.name().equals("SMALL_DATA_PACKET")){
+					if (receivePacket.getData()[1] == 3){
+						count++;
+						if(count == packetNumber){ 
+							byte[] small = new byte[3];
+							for(byte b: small) b = 0;
+							receivePacket.setData(small);
+						}
 					}
 				}
 
@@ -207,6 +230,28 @@ public class ErrorSimulator {
 
 				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(),
 						receivePacket.getPort());
+				
+				if (type.name().equals("BIG_DATA_PACKET")){
+					if (receivePacket.getData()[1] == 3){
+						count++;
+						if(count == packetNumber){
+							byte[] big = new byte[600];
+							for(byte b: big) b = 0;
+							receivePacket.setData(big);
+						}
+					}
+				}
+				
+				if (type.name().equals("SMALL_DATA_PACKET")){
+					if (receivePacket.getData()[1] == 3){
+						count++;
+						if(count == packetNumber){
+							byte[] small = new byte[3];
+							for(byte b: small) b = 0;
+							receivePacket.setData(small);
+						}
+					}
+				}
 
 				if (type.name().equals("UNKNOWN_PORT")) {
 
@@ -559,7 +604,19 @@ public class ErrorSimulator {
 				validPacket = true;
 				packet = PacketType.getPacketType(0);
 			}
-			if (errorType >= 0 && errorType <= 8) {// if errorType is a valid ordinal for PacketType
+			else if (errorType == 7){
+				type = ErrorType.getErrorType(7);
+				validType = true;
+				packet = PacketType.getPacketType(2);
+				validPacket = true;
+			}
+			else if (errorType == 8){
+				type = ErrorType.getErrorType(8);
+				validType = true;
+				packet = PacketType.getPacketType(2);
+				validPacket = true;
+			}
+			else if (errorType >= 0 && errorType <= 6) {// if errorType is a valid ordinal for PacketType
 				type = ErrorType.getErrorType(errorType);
 				validType = true;
 			} else
@@ -626,7 +683,7 @@ public class ErrorSimulator {
 	public enum ErrorType {
 
 		NORMAL_OPERATION(0), LOSE_PACKET(1), DELAY_PACKET(2), DUPLICATE_PACKET(3), INVALID_OPCODE(
-				4), INVALID_BLOCK_NUMBER(5), UNKNOWN_PORT(6);
+				4), INVALID_BLOCK_NUMBER(5), UNKNOWN_PORT(6), BIG_DATA_PACKET(7), SMALL_DATA_PACKET(8);
 		private int type;
 
 		ErrorType(int type) {
@@ -648,6 +705,10 @@ public class ErrorSimulator {
 				return INVALID_BLOCK_NUMBER;
 			if (type == 6)
 				return UNKNOWN_PORT;
+			if (type == 7)
+				return BIG_DATA_PACKET;
+			if (type == 8)
+				return SMALL_DATA_PACKET;
 			else
 				throw new IllegalArgumentException("Invalid type");
 		}

@@ -114,7 +114,7 @@ public class ServerThread implements Runnable {
 		while (true) {
 			
 			data = new byte[512 + 4];
-			receivePacket = new DatagramPacket(data, data.length);
+			receivePacket.setData(data);
 			// receive packet from Client
 			try { 
 				sendReceiveSocket.receive(receivePacket);	
@@ -339,6 +339,23 @@ public class ServerThread implements Runnable {
 	 * @param packet, DatagramPacket that will be checked
 	 */
 	public void checkLegality(DatagramPacket packet) {
+		
+		System.out.println("packet length: " + packet.getData().length);
+		//checks if packet size is too big
+		if(packet.getData().length > 516){
+			ErrorPacket tooBig = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(tooBig);
+			System.out.println("Server Received Illegal TFTP Operation.");
+			System.exit(1);
+		}
+				
+		//checks if packet size is too small
+		if(packet.getData().length < 4){
+			ErrorPacket tooSmall = new ErrorPacket(ErrorCode.ILLEGAL_TFTP_OPERATION);
+			sendErrorPacket(tooSmall);
+			System.out.println("Server Received Illegal TFTP Operation.");
+			System.exit(1);
+		}
 	
 		//checks for bad opcode
 		if(packet.getData()[0] != ZERO || packet.getData()[1] > FIVE) {

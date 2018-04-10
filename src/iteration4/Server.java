@@ -33,6 +33,7 @@ public class Server implements Runnable {
 	
 	private int port = 69;
 	private String relativePath = System.getProperty("user.dir");
+	private String directory;
 	
 	private String rq;
 	private String read = "READ";
@@ -53,6 +54,7 @@ public class Server implements Runnable {
 			// Construct a socket to receive bounded to port 69
 			receiveSocket = new DatagramSocket(port);
 			rq = "NONE";
+			directory = relativePath + "\\Server\\";
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -77,7 +79,7 @@ public class Server implements Runnable {
 			checkError(receivePacket);
  			rq = checkReadWrite(receivePacket.getData());
 			if (rq.equals(read)) {
-				path = toBytes(relativePath + "\\Server\\" + getPath(receivePacket));
+				path = toBytes(directory + getPath(receivePacket));
 				blockNumber = new int[2];
 				blockNumber[0] = 0;
 				blockNumber[1] = 1;
@@ -86,7 +88,7 @@ public class Server implements Runnable {
 				blockNumber = new int[2];
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
 				try {
-					f = new File(relativePath + "\\Server\\" + getFilename(receivePacket.getData()));
+					f = new File(directory + "\\" + getFilename(receivePacket.getData()));
 					
 					if(f.exists()) {
 						ErrorPacket errorPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
@@ -320,6 +322,7 @@ public class Server implements Runnable {
 	public static void main(String[] args) {
 		Scanner sc = new Scanner(System.in);	
 		Server s = new Server();
+		String msg;
 		new Thread(s).start();
 		try {
 			InetAddress addr = InetAddress.getLocalHost();
@@ -327,17 +330,25 @@ public class Server implements Runnable {
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 		}
-		System.out.println("Server: To exit, enter 'exit'");
 		
 		
 		//Check for exit command
 		while(true) {
+			
+			System.out.println("Server: To exit, enter 'exit'");
+			System.out.println("Server: To change directory, enter 'cd'");
+			
 			if (sc.hasNextLine()) {
-				String msg = sc.nextLine().toLowerCase();
+				msg = sc.nextLine().toLowerCase();
 				if (msg.equals("exit")) {
 					sc.close();
 					s.shutdown();
 					break;
+				}
+				if (msg.equals("cd")){
+					System.out.println("Server: Enter new directory of server");
+					while(!sc.hasNext()) sc.next();
+					s.directory = sc.nextLine();
 				}
 			}
 		}

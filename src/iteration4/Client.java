@@ -38,7 +38,6 @@ public class Client {
 
 	private InetAddress address;
 	
-	
 	private boolean mode;
 	private boolean foreignServer;
 	private boolean multiClient;
@@ -47,6 +46,7 @@ public class Client {
 	private DatagramPacket sendPacket, receivePacket;
 	
 	private String relativePath = System.getProperty("user.dir");
+	private String directory;
 
 	/**
 	 * Constructor for client
@@ -59,6 +59,7 @@ public class Client {
 			sendReceiveSocket = new DatagramSocket();
 			byte[] data = new byte[4];//2 Bytes for opcode 2 Bytes for block number
 		    receivePacket = new DatagramPacket(data, data.length);
+		    directory = relativePath + "\\Client\\";
 		}
 		catch (SocketException se){
 			se.printStackTrace();
@@ -136,6 +137,8 @@ public class Client {
 						receivePort = receivePacket.getPort();
 						first = false;
 					}
+					
+					if(multiClient) serverPort = receivePort;
 
 					// check for port
 					if (receivePacket.getPort() != receivePort) {
@@ -329,13 +332,15 @@ public class Client {
 			}
 			
 			if(first) receivePort = receivePacket.getPort();
-			if (emptyDataReceived) finished = true;
+			
 			// check if empty DATA packet (finished transferring)
 			// e.g. receivePacket = [0, 3, 0 ... 0]
 			if (receivePacket.getData()[1] == 3 && receivePacket.getData()[2] == 0
-					&& receivePacket.getData()[515] == 0) {
+					&& receivePacket.getData()[5] == 0) {
 				emptyDataReceived = true;
 			}
+			
+			if (emptyDataReceived) finished = true;
 			//check for port
 			if(receivePacket.getPort() != receivePort){
 				ErrorPacket wrongPort = new ErrorPacket(ErrorCode.UNKNOWN_TRANSFER_ID);
@@ -362,7 +367,7 @@ public class Client {
 			if(first) {
 				// Create writer and file with filename in Client folder
 				try { 
-					File f = new File(relativePath + "\\Client\\" + filename);
+					File f = new File(directory + "//" + filename);
 					if(f.exists()) {
 						ErrorPacket fileExists = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS);
 						sendErrorPacket(fileExists);
@@ -377,6 +382,7 @@ public class Client {
 				}
 			}
 		
+			if(multiClient) serverPort = receivePort;
 			
 			//removes first four bytes
 			byte[] cleanedData = new byte[receivePacket.getData().length - 4];
@@ -411,7 +417,7 @@ public class Client {
 			}
 			
 			try {
-				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), simPort);
+				sendPacket = new DatagramPacket(ack, ack.length, InetAddress.getLocalHost(), serverPort);
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
 				System.exit(1);
@@ -425,7 +431,7 @@ public class Client {
 
 			//end of transfer
 			if(finished) {
-				System.out.println("Client: Read complete, blocks received: " + blockNum[0] + blockNum[1]);
+				System.out.println("Client: Read complete, blocks received: " + ((blockNum[0]*10) + blockNum[1] - 1));
 				return;
 			}
 		}
@@ -797,15 +803,31 @@ public class Client {
 		this.multiClient = multiClient;
 	}
 	
+	
 	public static void main(String args[]){
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
 		boolean modeSelected = false;
 		boolean serverSelected = false;
 		boolean clientSelected = false;
-		String mode, server, ip, host, client;
+		boolean directorySelected = false;
+		String mode, server, host, client, in, command, change;
 		
 		while (true) {
+			
+			while(!directorySelected){
+				
+				System.out.println("Do you want to change the location of the client? (y/n)");
+				while(!sc.hasNext()) sc.next();
+				change = sc.nextLine();
+				if(change.equals("y")){
+					System.out.println("Enter directory of client");
+					while(!sc.hasNext()) sc.next();
+					c.directory = sc.nextLine();
+					directorySelected = true;
+				}else if(change.equals("n"))directorySelected = true;
+			}
+			
 			while(!modeSelected) {
 				// Select quiet or verbose mode
 				System.out.println("Client: Enter q for 'quiet' mode or v for 'verbose'");
@@ -831,10 +853,10 @@ public class Client {
 				}else if(server.equals("f")){
 					c.setForeign(true);
 					// Select port of foreign server
-					System.out.println("Client: Enter ip address of foreign server");
+					System.out.println("Client: Enter host of foreign server");
 					while(!sc.hasNextLine()) sc.nextLine();
-					ip = sc.nextLine();;
-					c.setForeignAddress(ip);
+					host = sc.nextLine();;
+					c.setForeignAddress(host);
 					serverSelected = true;
 					}
 			}
@@ -853,11 +875,17 @@ public class Client {
 				}
 			}
 			
+			directorySelected = false;
+			
 			System.out.println("Client: Enter file name or 'exit' to terminate.");
-			String in = sc.nextLine().toLowerCase();
+			while(!sc.hasNext()) sc.next();
+			in = sc.nextLine();
 			if (in.equals("exit")) break;
+			
 			System.out.println("Client: Enter 'r' for read request or 'w' for write request");
-			String command = sc.nextLine().toLowerCase();
+			while(!sc.hasNext()) sc.next();
+			command = sc.nextLine().toLowerCase();
+			
 			if (command.equals("r")) c.sendRead(in);
 			else if (command.equals("w")) c.sendWrite(in);
 			else System.out.println("Client: Command not recognized.");

@@ -14,6 +14,10 @@ public enum ErrorCode {
 		this.code = code;
 	}
 	
+	byte getCode(){
+		return (byte)code;
+	}
+	
 	static ErrorCode getErrorCode(int code) throws IllegalArgumentException {
 		if(code == 1) return FILE_NOT_FOUND;
 		if(code == 2) return ACCESS_VIOLATION;

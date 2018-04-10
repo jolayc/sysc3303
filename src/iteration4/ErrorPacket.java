@@ -15,7 +15,7 @@ public class ErrorPacket{
 		errorPacket[0] = ZERO;
 		errorPacket[1] = FIVE;
 		errorPacket[2] = ZERO;
-		errorPacket[3] = (byte)code.ordinal();
+		errorPacket[3] = code.getCode();
 		
 		byte[] message = code.name().getBytes();
 		

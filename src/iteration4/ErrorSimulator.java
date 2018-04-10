@@ -28,6 +28,7 @@ public class ErrorSimulator {
 	private static int packetNumber;
 	private static int delay;
 	private static int duplicateOffset;
+	private static int unknownPort;
 	private int count;
 
 	/**
@@ -39,7 +40,6 @@ public class ErrorSimulator {
 		try {
 			// Constructs a socket to receive packets bounded to port 23
 			receiveSocket = new DatagramSocket(23);
-			wrongPortSocket = new DatagramSocket(24);
 
 			// Constructs a socket to send packets from any available port
 			sendReceiveSocket = new DatagramSocket();
@@ -69,6 +69,7 @@ public class ErrorSimulator {
 			// port number
 			// 69 for RQ, 23 for DATA and ACK
 			int port = 69;
+			int count = 0;
 
 			// repeat forever
 			while (true) {
@@ -92,19 +93,27 @@ public class ErrorSimulator {
 				if (type.name().equals("INVALID_OPCODE")) {
 					if (receivePacket.getData()[1] == 1 && packet.name().equals("RRQ"))
 						receivePacket.getData()[1] = 6;
-					if (receivePacket.getData()[1] == 2 && packet.name().equals("WRQ"))
+					else if (receivePacket.getData()[1] == 2 && packet.name().equals("WRQ"))
 						receivePacket.getData()[1] = 7;
-					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA"))
-						receivePacket.getData()[1] = 8;
-					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK"))
-						receivePacket.getData()[1] = 9;
+					else if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+						count++;
+						if(count == packetNumber) receivePacket.getData()[1] = 8;
+					}
+					else if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")){
+						count++;
+					    if(count == packetNumber) receivePacket.getData()[1] = 9;
+					}
 				}
 
 				if (type.name().equals("INVALID_BLOCK_NUMBER")) {
-					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA"))
-						receivePacket.getData()[3] = 8;
-					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK"))
-						receivePacket.getData()[3] = 9;
+					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+						count++;
+						if(count == packetNumber) receivePacket.getData()[3] = (byte) (count + 2);
+					}
+					else if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")){
+						count++;
+						if(count == packetNumber) receivePacket.getData()[3] = (byte) (count + 2);
+					}
 				}
 
 				// send packet from client to server
@@ -117,14 +126,27 @@ public class ErrorSimulator {
 					System.exit(1);
 				}
 				if (type.name().equals("UNKNOWN_PORT")) {
-
-					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")) {
-						sendPack(wrongPortSocket, sendReceivePacket);
-						type = ErrorType.getErrorType(0);
+					if(count == 0){
+						try {
+							wrongPortSocket = new DatagramSocket(unknownPort);
+						} catch (SocketException e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
 					}
-					if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
-						sendPack(wrongPortSocket, sendReceivePacket);
-						type = ErrorType.getErrorType(0);
+					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")) {
+						count++;
+						if(count == packetNumber){
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
+					}
+					else if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
+						count++;
+						if(count == packetNumber){
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
 					}
 				}
 				sendPack(sendReceiveSocket, sendReceivePacket);
@@ -157,12 +179,28 @@ public class ErrorSimulator {
 				}
 
 				port = sendReceivePacket.getPort();
-
+				
 				if (type.name().equals("INVALID_OPCODE")) {
-					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA"))
-						receivePacket.getData()[1] = 8;
-					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK"))
-						receivePacket.getData()[1] = 9;
+			
+					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+						count++;
+						if(count == packetNumber) sendReceivePacket.getData()[1] = 8;
+					}
+					else if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK")){
+						count++;
+					    if(count == packetNumber) sendReceivePacket.getData()[1] = 9;
+					}
+				}
+				
+				if (type.name().equals("INVALID_BLOCK_NUMBER")) {
+					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")){
+						count++;
+						if(count == packetNumber) sendReceivePacket.getData()[3] = (byte) (count + 2);
+					}
+					else if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK")){
+						count++;
+						if(count == packetNumber) sendReceivePacket.getData()[3] = (byte) (count + 2);
+					}
 				}
 
 				sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(),
@@ -170,13 +208,19 @@ public class ErrorSimulator {
 
 				if (type.name().equals("UNKNOWN_PORT")) {
 
-					if (receivePacket.getData()[1] == 3 && packet.name().equals("DATA")) {
-						sendPack(wrongPortSocket, sendReceivePacket);
-						type = ErrorType.getErrorType(0);
+					if (sendReceivePacket.getData()[1] == 3 && packet.name().equals("DATA")) {
+						count++;
+						if(count == packetNumber){
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
 					}
-					if (receivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
-						sendPack(wrongPortSocket, sendReceivePacket);
-						type = ErrorType.getErrorType(0);
+					else if (sendReceivePacket.getData()[1] == 4 && packet.name().equals("ACK")) {
+						count++;
+						if(count == packetNumber){
+							sendPack(wrongPortSocket, sendReceivePacket);
+							type = ErrorType.getErrorType(0);
+						}
 					}
 				}
 				sendPack(sendReceiveSocket, sendPacket);
@@ -502,8 +546,8 @@ public class ErrorSimulator {
 		boolean validPacket = false;
 
 		while (!validType) {
-			System.out.println(
-					"ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet, 4 for invalid TFTP opcode, 5 for invalid block number, 6 for unknown port.");
+			System.out.println("ErrorSim: Enter 0 for normal operation, 1 for lose a packet, 2 for delay a packet and 3 for duplicate a packet, 4 for invalid TFTP opcode, "
+					+ "5 for invalid block number, 6 for unknown port, 7 for too big packet, 8 for too small packet.");
 			while (!sc.hasNextInt())
 				sc.next();
 			int errorType = sc.nextInt();
@@ -513,7 +557,7 @@ public class ErrorSimulator {
 				validPacket = true;
 				packet = PacketType.getPacketType(0);
 			}
-			if (errorType >= 0 && errorType <= 6) {// if errorType is a valid ordinal for PacketType
+			if (errorType >= 0 && errorType <= 8) {// if errorType is a valid ordinal for PacketType
 				type = ErrorType.getErrorType(errorType);
 				validType = true;
 			} else
@@ -526,15 +570,14 @@ public class ErrorSimulator {
 				sc.next();
 
 			int packetType = sc.nextInt();
-			if (packetType >= 0 && packetType <= 3) {// if packetType is a valid ordinal for PacketType
+			if (packetType >= 0 && packetType < 4) {// if packetType is a valid ordinal for PacketType
 				packet = PacketType.getPacketType(packetType);
 				validPacket = true;
 			} else
 				System.out.println("ErrorSim: Invalid request entered");
 		}
 
-		if ((packet.ordinal() == 2 || packet.ordinal() == 3)
-				&& !(type.ordinal() == 4 || type.ordinal() == 5 || type.ordinal() == 6)) {// to determine the nth. DATA
+		if ((packet.ordinal() == 2) || packet.ordinal() == 3) {// to determine the nth. DATA
 																							// or ACK packet
 			if (packet.ordinal() == 2)
 				System.out.println("ErrorSim: Enter the DATA packet that will be affected: ");
@@ -565,6 +608,13 @@ public class ErrorSimulator {
 			while (!sc.hasNextInt())
 				sc.next();
 			duplicateOffset = sc.nextInt();
+		}
+		
+		if (type.ordinal() == 6){
+			System.out.println("ErrorSim: Enter the unknown port: ");
+			while (!sc.hasNextInt())
+				sc.next();
+			unknownPort = sc.nextInt();
 		}
 		System.out.println("ErrorSim: Running...");
 		sim.receiveAndSend();

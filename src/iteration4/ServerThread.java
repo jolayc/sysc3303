@@ -36,7 +36,7 @@ public class ServerThread implements Runnable {
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x0;
 	private final byte FIVE = 0x05;
-	private final int simPort = 23;
+
 	/**
 	 * Constructor for ServerThread
 	 * @param receivePacket packet received from host
@@ -88,7 +88,7 @@ public class ServerThread implements Runnable {
 		// Send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), simPort);
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePort);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -139,7 +139,7 @@ public class ServerThread implements Runnable {
 			response = createACKPacket();
 			
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), simPort);
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -180,7 +180,7 @@ public class ServerThread implements Runnable {
 		// send DATA to read request
 		data = createDataPacket();
 		try {
-			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
+			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), receivePort);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -240,7 +240,7 @@ public class ServerThread implements Runnable {
 			
 			// Create and send DATA packet to Client
 			try {
-				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), simPort);
+				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), receivePort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -316,7 +316,7 @@ public class ServerThread implements Runnable {
 	private void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
-			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), simPort);
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), receivePort);
 			sendReceiveSocket.send(errorPacket);
 		} catch (IOException e) {
 			e.printStackTrace();

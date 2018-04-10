@@ -18,6 +18,6 @@ public enum PacketType {
 		if(code == 3) return DATA;
 		if(code == 4) return ACK;
 		if(code == 5) return ERROR;
-		else throw new IllegalArgumentException("Invalid packet type");
+		else throw new IllegalArgumentException("Invalid packet type" + code);
 	}
 }

@@ -38,7 +38,7 @@ public class Client {
 
 	private InetAddress address;
 	
-	private boolean mode;
+	private boolean quiet;
 	private boolean foreignServer;
 	private boolean multiClient;
 	
@@ -47,6 +47,7 @@ public class Client {
 	
 	private String relativePath = System.getProperty("user.dir");
 	private String directory;
+	private String mode;
 
 	/**
 	 * Constructor for client
@@ -562,7 +563,7 @@ public class Client {
 	 * @return DatagramPacket containing read request
 	 */
 	public DatagramPacket createWRQPacket(String filename){
-		String mode = "netascii";
+
 		// |Opcode (2 bytes)|
 		byte[] wrq = new byte[4 + filename.length() + mode.length()];
 		wrq[0] = ZERO;
@@ -705,7 +706,7 @@ public class Client {
 	 */
 	private void printSend(DatagramPacket packet) {
 		System.out.println("Client: Sending packet");
-		if (!mode) {
+		if (!quiet) {
 		    System.out.println("To host: " + packet.getAddress());
 		    System.out.println("Destination host port: " + packet.getPort());
 		    printStatus(packet);
@@ -718,7 +719,7 @@ public class Client {
 	 */
 	private void printReceive(DatagramPacket packet){
 		System.out.println("Client: Packet received");
-		if(!mode) {
+		if(!quiet) {
 		    System.out.println("From host: " + packet.getAddress());
 		    System.out.println("Host port: " + packet.getPort());
 		    printStatus(packet);
@@ -730,7 +731,7 @@ public class Client {
 	 * @param packet, DatagramPacket that is used in the request
 	 */
 	private void printStatus(DatagramPacket packet) {
-		if (!mode) {
+		if (!quiet) {
 			byte[] data = packet.getData();
 			PacketType type = PacketType.getPacketType((int)data[1]);
 			int len = packet.getLength();
@@ -788,14 +789,22 @@ public class Client {
 	 * Sets the mode to 'Quiet' or 'Verbose'
 	 * @param mode	True for Quiet, False for Verbose
 	 */
-	private void setQuiet(boolean mode) {
-		this.mode = mode;	
+	private void setQuiet(boolean quiet) {
+		this.quiet = quiet;	
 	}
 	
+	/**
+	 * Sets the foreignServer to true or false
+	 * @param foreign True for server on foreign computer, False if on the same
+	 */
 	private void setForeign(boolean foreign){
 		this.foreignServer = foreign;
 	}
 	
+	/**
+	 * Sets the address of the foreign server
+	 * @param address, String with address of foreign server
+	 */
 	private void setForeignAddress(String address){
 		try {
 			this.address = InetAddress.getByName(address);
@@ -806,19 +815,32 @@ public class Client {
 		}		
 	}
 	
+	/**
+	 * Sets multiClient to true or false
+	 * @param multiClient, boolean
+	 */
 	private void setMultiClient(boolean multiClient){
 		this.multiClient = multiClient;
+	}
+	
+	/**
+	 * Sets the mode that the request will have
+	 * @param mode, String with the mode
+	 */
+	private void setMode(String mode){
+		this.mode = mode;
 	}
 	
 	
 	public static void main(String args[]){
 		Client c = new Client();
 		Scanner sc =  new Scanner(System.in);
+		boolean textSelected = false;
 		boolean modeSelected = false;
 		boolean serverSelected = false;
 		boolean clientSelected = false;
 		boolean directorySelected = false;
-		String mode, server, host, client, in, command, change;
+		String textMode, mode, server, host, client, in, command, change;
 		
 		while (true) {
 			
@@ -835,18 +857,32 @@ public class Client {
 				}else if(change.equals("n"))directorySelected = true;
 			}
 			
-			while(!modeSelected) {
+			while(!textSelected) {
 				// Select quiet or verbose mode
 				System.out.println("Client: Enter q for 'quiet' mode or v for 'verbose'");
 				while(!sc.hasNext()) sc.next();
-				mode = sc.nextLine();
-				if(mode.equals("q")) {
+				textMode = sc.nextLine();
+				if(textMode.equals("q")) {
 					c.setQuiet(true);
-					modeSelected = true;
-				} else if (mode.equals("v")) {
+					textSelected = true;
+				} else if (textMode.equals("v")) {
 					c.setQuiet(false);
-					modeSelected = true;
+					textSelected = true;
 				} 
+			}
+			
+			while(!modeSelected){
+				//selected netascii or octet mode
+				System.out.println("Client: Enter n for netascii mode or o for octet mode");
+				while(!sc.hasNext()) sc.next();
+				mode = sc.nextLine();
+				if(mode.equals("n")){
+					c.setMode("netascii");
+					modeSelected = true;
+				} else if(mode.equals("o")){
+					c.setMode("octet");
+					modeSelected = true;
+				}
 			}
 			
 			while(!serverSelected){
@@ -883,6 +919,7 @@ public class Client {
 			}
 			
 			directorySelected = false;
+			modeSelected = false;
 			
 			System.out.println("Client: Enter file name or 'exit' to terminate.");
 			while(!sc.hasNext()) sc.next();

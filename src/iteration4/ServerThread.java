@@ -27,15 +27,19 @@ public class ServerThread implements Runnable {
 	private int[] blockNum, oldNum;
 	private int numberOfTimeout=0;
 	private int receivePort;
+	private int sendPort;
+	
 	private boolean done = false;
 	private boolean read = false;
 	private boolean write = false;
+	private boolean multi;
 	
 	private final byte ZERO = 0x00;
 	private final byte ONE = 0x01;
 	private final byte TWO = 0x02; 
 	private final byte FOUR = 0x0;
 	private final byte FIVE = 0x05;
+	private final int errorSim = 23;
 
 	/**
 	 * Constructor for ServerThread
@@ -45,12 +49,13 @@ public class ServerThread implements Runnable {
 	 * @param blockNumber is the current block number of the file 
 	 */
 
-	public ServerThread(DatagramPacket receivePacket, byte[] path, File file, String message, int[] blockNumber) {
+	public ServerThread(DatagramPacket receivePacket, byte[] path, File file, String message, int[] blockNumber, boolean multi) {
 		this.message = message;
 		this.receivePacket = receivePacket;
 		this.file = file;
 		this.path = path;
 		this.blockNumber = blockNumber;
+		this.multi = multi;
 	}
 	/**
 	 * Run handles the packets received from the host. 
@@ -67,7 +72,12 @@ public class ServerThread implements Runnable {
 		}
 		
 		byte[] data =  receivePacket.getData();
+		
 		receivePort = receivePacket.getPort();
+		
+		if(!multi) sendPort = errorSim;
+		else sendPort = receivePort;
+		
 		if(data[0] == 0 && data[1] == 1) handleRead();
 		else if(data[0] == 0 && data[1] == 2) handleWrite();
 		sendReceiveSocket.close();
@@ -88,7 +98,7 @@ public class ServerThread implements Runnable {
 		// Send ACK to write request
 		response = createACKPacket();
 		try {
-			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePort);
+			sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), sendPort);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -139,7 +149,7 @@ public class ServerThread implements Runnable {
 			response = createACKPacket();
 			
 			try {
-				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), receivePort);
+				sendPacket = new DatagramPacket(response, response.length, InetAddress.getLocalHost(), sendPort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -180,7 +190,7 @@ public class ServerThread implements Runnable {
 		// send DATA to read request
 		data = createDataPacket();
 		try {
-			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), receivePort);
+			sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), sendPort);
 		} catch (UnknownHostException ue) {
 			ue.printStackTrace();
 			System.exit(1);
@@ -240,7 +250,7 @@ public class ServerThread implements Runnable {
 			
 			// Create and send DATA packet to Client
 			try {
-				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), receivePort);
+				sendPacket = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), sendPort);
 			} catch (UnknownHostException ue) {
 				ue.printStackTrace();
 				System.exit(1);
@@ -316,7 +326,7 @@ public class ServerThread implements Runnable {
 	private void sendErrorPacket(ErrorPacket error) {
 		DatagramPacket errorPacket;
 		try {
-			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), receivePort);
+			errorPacket = new DatagramPacket(error.getBytes(), error.length(), InetAddress.getLocalHost(), sendPort);
 			sendReceiveSocket.send(errorPacket);
 		} catch (IOException e) {
 			e.printStackTrace();

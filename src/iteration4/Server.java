@@ -41,6 +41,8 @@ public class Server implements Runnable {
 	private String other = "OTHER";
 	
 	private int[] blockNumber;
+	
+	private boolean multiClient;
 
 	private File f;
 	
@@ -83,7 +85,7 @@ public class Server implements Runnable {
 				blockNumber = new int[2];
 				blockNumber[0] = 0;
 				blockNumber[1] = 1;
-				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, null, rq, blockNumber, multiClient)).start();
 			} else if (rq.equals(write)) {
 				blockNumber = new int[2];
 				path = toBytes(relativePath + "\\Client\\" + getPath(receivePacket));
@@ -110,7 +112,7 @@ public class Server implements Runnable {
 					System.out.println("The disk is full.");
 					shutdown();
 				}
-				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber)).start();
+				new Thread(new ServerThread(receivePacket, path, f, rq, blockNumber, multiClient)).start();
 			} else {}
 		}
 		shutdown();
@@ -264,6 +266,10 @@ public class Server implements Runnable {
 		}
 	}
 	
+	/**
+	 * Getter for server's inetaddress
+	 * @return InetAddress of the server
+	 */
 	private InetAddress getInetAddress(){
 		try {
 			return InetAddress.getLocalHost();
@@ -272,6 +278,13 @@ public class Server implements Runnable {
 			System.exit(1);
 		}
 		return null;
+	}
+	
+	/**
+	 * Setter for instance's multiClient boolean
+	 */
+	private void setMultiClient(boolean multi){
+		this.multiClient = multi;
 	}
 	
 	/**
@@ -334,6 +347,22 @@ public class Server implements Runnable {
 		
 		//Check for exit command
 		while(true) {
+			System.out.println("Will this server allow for multiple concurrent clients? (y/n)");
+			String multi;
+			boolean multiSelected = false;
+			
+			while(!multiSelected){
+				//server allows for multiple clients
+				while(!sc.hasNext()) sc.next();
+				multi = sc.nextLine();
+				if(multi.equals("y")){
+					s.setMultiClient(true);
+					multiSelected = true;
+				}else if(multi.equals("n")){
+					s.setMultiClient(false);
+					multiSelected = true;
+				}
+			}
 			
 			System.out.println("Server: To exit, enter 'exit'");
 			System.out.println("Server: To change directory, enter 'cd'");

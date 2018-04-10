@@ -65,6 +65,7 @@ public class ErrorSimulator {
 			// status flag
 			boolean finishedRead = false;
 			boolean finishedWrite = false;
+			boolean wrongPortSelected = false;
 
 			// port number
 			// 69 for RQ, 23 for DATA and ACK
@@ -126,9 +127,10 @@ public class ErrorSimulator {
 					System.exit(1);
 				}
 				if (type.name().equals("UNKNOWN_PORT")) {
-					if(count == 0){
+					if(!wrongPortSelected){
 						try {
 							wrongPortSocket = new DatagramSocket(unknownPort);
+							wrongPortSelected = true;
 						} catch (SocketException e) {
 							e.printStackTrace();
 							System.exit(1);
